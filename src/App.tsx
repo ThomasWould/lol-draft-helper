@@ -294,15 +294,6 @@ export default function App() {
             </div>
           )}
 
-        <div className="card sidePanel cardSticky">
-          <h2>Quick Notes</h2>
-          <div className="muted small" style={{ lineHeight: 1.6 }}>
-            • Top threats: (coming soon)<br />
-            • Build swaps: (coming soon)<br />
-            • Reminder: hold Q for key CC
-          </div>
-        </div>
-
           <p className="muted small" style={{ marginTop: 10 }}>
             (Next: add “key threats” callout + better matchup branching.)
           </p>
