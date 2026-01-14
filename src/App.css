@@ -30,6 +30,12 @@ body {
 }
 
 /* -------- Layout -------- */
+/* Global box-sizing fix */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 .page {
   max-width: 980px;
@@ -134,8 +140,7 @@ h1 {
 
 /* -------- Textarea -------- */
 
-.textarea,
-textarea {
+.textarea {
   width: 100%;
   min-height: 96px;
   resize: vertical;
@@ -147,6 +152,8 @@ textarea {
   line-height: 1.45;
   outline: none;
   transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .textarea::placeholder,
