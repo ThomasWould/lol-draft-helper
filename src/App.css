@@ -1,34 +1,89 @@
-.page {
-  max-width: 900px;
-  margin: 24px auto;
-  padding: 0 16px 40px;
+:root {
+  --bg0: #0b0c10;
+  --bg1: #0f111a;
+  --card: rgba(255, 255, 255, 0.05);
+  --card2: rgba(255, 255, 255, 0.035);
+  --border: rgba(255, 255, 255, 0.10);
+  --border2: rgba(255, 255, 255, 0.16);
+  --text: rgba(255, 255, 255, 0.92);
+  --muted: rgba(255, 255, 255, 0.72);
+  --muted2: rgba(255, 255, 255, 0.58);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --shadow2: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --radius: 16px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 700px at 20% 0%, rgba(120, 90, 255, 0.18), transparent 55%),
+    radial-gradient(1000px 700px at 90% 20%, rgba(0, 200, 255, 0.12), transparent 55%),
+    linear-gradient(180deg, var(--bg0), var(--bg1));
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
+
+/* -------- Layout -------- */
+
+.page {
+  max-width: 980px;
+  margin: 22px auto;
+  padding: 0 16px 48px;
+}
+
+@media (max-width: 560px) {
+  .page {
+    margin: 14px auto;
+    padding-bottom: 34px;
+  }
+}
+
+/* -------- Header -------- */
 
 .header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px 14px 4px;
+  border-radius: var(--radius);
 }
 
 h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: 30px;
+  letter-spacing: -0.02em;
 }
 
 .sub {
-  margin: 6px 0 0;
-  opacity: 0.85;
+  margin: 8px 0 0;
+  opacity: 0.92;
+  color: var(--muted);
+  line-height: 1.35;
 }
 
+/* -------- Card -------- */
+
 .card {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
   margin: 14px 0;
-  background: rgba(255, 255, 255, 0.03);
+  background: linear-gradient(180deg, var(--card), var(--card2));
+  box-shadow: var(--shadow2);
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 14px;
+  }
 }
 
 .row {
@@ -37,45 +92,79 @@ h1 {
 
 .label {
   display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
+  margin-bottom: 10px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
+
+/* -------- Segmented buttons -------- */
 
 .segmented {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .segBtn {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: transparent;
+  border: 1px solid var(--border2);
+  background: rgba(255, 255, 255, 0.03);
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   color: inherit;
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.segBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+}
+
+.segBtn:active {
+  transform: translateY(0px);
 }
 
 .segBtn.active {
-  border-color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.09);
 }
 
-.textarea {
+/* -------- Textarea -------- */
+
+.textarea,
+textarea {
   width: 100%;
-  min-height: 90px;
+  min-height: 96px;
   resize: vertical;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  border: 1px solid var(--border2);
   background: rgba(0, 0, 0, 0.25);
   color: inherit;
-  padding: 10px 12px;
-  line-height: 1.4;
+  padding: 12px 12px;
+  line-height: 1.45;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
 }
 
+.textarea::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.textarea:focus,
+textarea:focus {
+  border-color: rgba(120, 90, 255, 0.65);
+  box-shadow: 0 0 0 4px rgba(120, 90, 255, 0.18);
+  background: rgba(0, 0, 0, 0.20);
+}
+
+/* -------- Misc UI -------- */
+
 .hint {
-  margin-top: 8px;
-  opacity: 0.85;
+  margin-top: 10px;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -83,41 +172,59 @@ h1 {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  margin: 8px 0 10px;
+  margin: 10px 0 12px;
 }
 
 .pill {
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--border2);
   border-radius: 999px;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .note {
-  margin: 8px 0 0;
-  line-height: 1.5;
+  margin: 10px 0 0;
+  line-height: 1.55;
 }
 
 .link {
-  opacity: 0.85;
+  opacity: 0.92;
   text-decoration: none;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 10px;
+  border: 1px solid var(--border2);
+  border-radius: 12px;
   padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: transform 120ms ease, background 120ms ease, opacity 120ms ease;
+  box-shadow: var(--shadow2);
 }
 
 .link:hover {
   opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
 }
 
 .muted {
-  opacity: 0.75;
+  opacity: 0.78;
+  color: var(--muted);
 }
 
 .small {
   font-size: 12px;
+  color: var(--muted2);
 }
 
 .footer {
-  margin-top: 10px;
+  margin-top: 12px;
+  padding: 4px 6px;
+}
+
+/* Optional: nicer bullet spacing inside cards */
+.card ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.card li {
+  margin: 6px 0;
 }
