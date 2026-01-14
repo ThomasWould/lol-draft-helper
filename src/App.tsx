@@ -241,72 +241,45 @@ export default function App() {
             </div>
           )}
 
-          <div style={{ marginTop: 10 }}>
-            <div className="label" style={{ marginBottom: 8 }}>
-              Runes
-            </div>
-            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
-              {rec.runes.map((x) => (
-                <li key={x}>{x}</li>
-              ))}
-            </ul>
+          {/* Coach-note style headline lines */}
+          <div style={{ marginTop: 12, lineHeight: 1.7 }}>
+            {rec.headlineLines.map((line) => (
+              <div key={line} style={{ marginBottom: 4 }}>
+                <b>{line}</b>
+              </div>
+            ))}
           </div>
 
+          {/* Items in order */}
           <div style={{ marginTop: 14 }}>
             <div className="label" style={{ marginBottom: 8 }}>
-              Skill order
+              ITEMS (IN ORDER):
             </div>
-            <p className="note">{rec.skillOrder}</p>
-          </div>
 
-          <div style={{ marginTop: 14 }}>
-            <div className="label" style={{ marginBottom: 8 }}>
-              Start
-            </div>
-            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
-              {rec.starter.map((x) => (
-                <li key={x}>{x}</li>
+            <ol style={{ margin: 0, paddingLeft: 20, lineHeight: 1.85 }}>
+              {rec.itemsOrdered.map((it, idx) => (
+                <li key={`${it.name}-${idx}`}>
+                  <span>{it.name}</span>
+                  {it.note && <span style={{ marginLeft: 10, opacity: 0.9 }}>{it.note}</span>}
+                </li>
               ))}
-            </ul>
+            </ol>
           </div>
 
-          <div style={{ marginTop: 14 }}>
-            <div className="label" style={{ marginBottom: 8 }}>
-              Core
-            </div>
-            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
-              {rec.coreItems.map((x) => (
-                <li key={x}>{x}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <div className="label" style={{ marginBottom: 8 }}>
-              Situational
-            </div>
-            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
-              {rec.situational.map((x) => (
-                <li key={x}>{x}</li>
-              ))}
-            </ul>
-          </div>
-
-          {rec.notes.length > 0 && (
+          {/* Fight rule */}
+          {rec.fightRule && (
             <div style={{ marginTop: 14 }}>
               <div className="label" style={{ marginBottom: 8 }}>
-                Notes
+                FIGHT RULE:
               </div>
-              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
-                {rec.notes.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
+              <p className="note" style={{ marginTop: 0 }}>
+                {rec.fightRule}
+              </p>
             </div>
           )}
 
           <p className="muted small" style={{ marginTop: 10 }}>
-            (Next: tighten tag detection + add matchup-specific branches.)
+            (Next: add “key threats” callout + better matchup branching.)
           </p>
         </div>
       </div>
