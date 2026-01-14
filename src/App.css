@@ -477,16 +477,3 @@ body::before {
   background: rgba(255,255,255,0.08);
   margin: 14px 0;
 }
-
-@media (min-width: 1350px) {
-  .grid {
-    grid-template-columns: 380px minmax(520px, 760px) 260px;
-  }
-  .sidePanel {
-    display: block;
-  }
-}
-
-.sidePanel {
-  display: none;
-}

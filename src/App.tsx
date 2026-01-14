@@ -266,15 +266,6 @@ export default function App() {
             • Build swaps: (coming soon)<br />
             • Reminder: hold Q for key CC
           </div>
-        </div>
-
-        <div className="card sidePanel cardSticky">
-          <h2>Quick Notes</h2>
-          <div className="muted small" style={{ lineHeight: 1.6 }}>
-            • Top threats: (coming soon)<br />
-            • Build swaps: (coming soon)<br />
-            • Reminder: hold Q for key CC
-          </div>
       </div>
 
           {/* Items in order */}
