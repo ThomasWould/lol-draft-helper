@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import "./App.css";
 import { useChampionData } from "./hooks/useChampionData";
 import { ChampionTextarea } from "./components/ChampionTextarea";
-import { championIconUrl } from "./api/ddragon";
+import type { DDragonChampion } from "./api/ddragon";
 
 type ChampionKey = "masteryi" | "volibear";
 
@@ -11,28 +11,58 @@ const CHAMPIONS: { key: ChampionKey; label: string; role: string }[] = [
   { key: "volibear", label: "Volibear", role: "Top" },
 ];
 
-function normalize(input: string) {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/['’.]/g, "")
-    .replace(/\s+/g, " ");
+function normalizeLoose(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-// a stricter normalize for matching Data Dragon names
-function normalizeKey(input: string) {
-  return normalize(input).replace(/[^a-z0-9 ]/g, "");
-}
-
-function splitChampions(raw: string): string[] {
+function splitTokens(raw: string): string[] {
   return raw
     .split(/,|\n/)
-    .map((s) => normalize(s))
+    .map((s) => s.trim())
     .filter(Boolean);
 }
 
-function getYiRuneNote(enemies: string[]) {
-  const tankyKeywords = [
+function resolveChampions(tokens: string[], championList: DDragonChampion[]) {
+  const byNormName = new Map<string, DDragonChampion>();
+  const byNormId = new Map<string, DDragonChampion>();
+
+  for (const c of championList) {
+    byNormName.set(normalizeLoose(c.name), c);
+    byNormId.set(normalizeLoose(c.id), c);
+  }
+
+  const matched: DDragonChampion[] = [];
+  const unmatched: string[] = [];
+
+  for (const t of tokens) {
+    const key = normalizeLoose(t);
+    const found = byNormName.get(key) || byNormId.get(key);
+    if (found) matched.push(found);
+    else unmatched.push(t);
+  }
+
+  // de-dupe while preserving order
+  const seen = new Set<string>();
+  const deduped = matched.filter((c) => {
+    if (seen.has(c.id)) return false;
+    seen.add(c.id);
+    return true;
+  });
+
+  return { matched: deduped, unmatched };
+}
+
+function championIconUrl(version: string, champ: DDragonChampion) {
+  // Data Dragon: /cdn/<version>/img/champion/<image.full>
+  return `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champ.image.full}`;
+}
+
+/** ---- Recommendation Logic (MVP, easy to expand) ---- */
+
+function getYiRecommendations(enemyNames: string[]) {
+  // Basic heuristics; we’ll refine with real archetypes later.
+  const tanky = new Set([
+    "drmundo",
     "mundo",
     "ornn",
     "sion",
@@ -40,79 +70,101 @@ function getYiRuneNote(enemies: string[]) {
     "sejuani",
     "rammus",
     "malphite",
-    "cho gath",
     "chogath",
-    "tahm",
-    "tahm kench",
-  ];
-  const tankCount = enemies.filter((e) => tankyKeywords.some((t) => e.includes(t))).length;
+    "tahmkench",
+  ]);
 
-  const rune = tankCount >= 2 ? "Cut Down" : "Coup de Grace";
-
-  const burstCcKeywords = [
-    "annie",
+  const heavyCcBurst = new Set([
     "lissandra",
     "leona",
     "nautilus",
     "rengar",
-    "kha",
     "khazix",
     "vi",
     "syndra",
     "zed",
     "fizz",
     "diana",
-  ];
-  const burstCount = enemies.filter((e) => burstCcKeywords.some((b) => e.includes(b))).length;
-  const wNote =
-    burstCount >= 2
-      ? "Matchup has a lot of burst/CC — consider 1–2 early points in W (Meditate) to survive spikes."
-      : "Probably fine to max Q/E as usual; W points are situational.";
+    "annie",
+  ]);
 
-  return { rune, wNote };
+  const tanks = enemyNames.filter((n) => tanky.has(n)).length;
+  const burstCc = enemyNames.filter((n) => heavyCcBurst.has(n)).length;
+
+  const rune = tanks >= 2 ? "Cut Down" : "Coup de Grace";
+  const wNote =
+    burstCc >= 2
+      ? "Lots of burst/CC — consider 1–2 early points in W (Meditate) to survive spikes."
+      : "Standard skill path is fine; early W points are situational.";
+
+  // Itemization: keep it simple + broadly correct.
+  const core = [
+    "Kraken Slayer (or your preferred DPS first item)",
+    "Guinsoo’s Rageblade (if on-hit)",
+    "Wit’s End (vs AP / mixed)",
+  ];
+
+  const situational = [
+    "Blade of the Ruined King (vs high-HP/tanks)",
+    "Death’s Dance (vs heavy AD burst)",
+    "Guardian Angel (vs shutdown / late fights)",
+    "Mercury Treads (vs lots of CC) / Steelcaps (vs heavy AD)",
+  ];
+
+  const skill = "Typical: Max Q → E → W (adjust W early if needed).";
+
+  return { rune, wNote, skill, core, situational };
 }
 
-function getVoliNotes(enemies: string[]) {
-  const rangedTopKeywords = ["teemo", "vayne", "quinn", "kennen", "jayce"];
-  const rangedTop = enemies.some((e) => rangedTopKeywords.some((r) => e.includes(r)));
-  return rangedTop
-    ? "Likely ranged/poke lane — consider Doran’s Shield + Second Wind style setup."
-    : "Standard bruiser lane — play for short trades and all-in windows.";
+function getVoliRecommendations(enemyNames: string[]) {
+  const rangedTop = new Set(["teemo", "vayne", "quinn", "kennen", "jayce"]);
+  const hasRanged = enemyNames.some((n) => rangedTop.has(n));
+
+  const lanePlan = hasRanged
+    ? "Likely ranged/poke lane — consider Doran’s Shield + Second Wind style setup; play for all-in windows post-6."
+    : "Standard bruiser lane — look for short trades into all-in windows; manage waves for dive threat with R.";
+
+  const runes = hasRanged
+    ? "Runes idea: Grasp (safer) or PTA (kill pressure) + Second Wind."
+    : "Runes idea: PTA (kill pressure) or Grasp (matchup dependent).";
+
+  const core = [
+    "Plated Steelcaps / Merc Treads (matchup)",
+    "Sundered Sky / Iceborn-style tanky item (matchup dependent)",
+    "Spirit Visage (synergy with healing) or Frozen Heart (vs AS/AD)",
+  ];
+
+  const situational = [
+    "Thornmail / Bramble (vs healing)",
+    "Force of Nature (vs heavy AP)",
+    "Randuin’s (vs crit)",
+    "Hullbreaker (if split is the wincon)",
+  ];
+
+  const skill = "Typical: Max W → Q → E (E for setup/shield; W for sustain/trades).";
+
+  return { lanePlan, runes, skill, core, situational };
 }
 
 export default function App() {
   const [selected, setSelected] = useState<ChampionKey>("masteryi");
   const [enemyRaw, setEnemyRaw] = useState("");
 
-  // Data Dragon load
-  const { loading, error, version, champMap, championList } = useChampionData();
+  const { loading, error, version, championList } = useChampionData();
 
-  const enemies = useMemo(() => splitChampions(enemyRaw), [enemyRaw]);
+  const tokens = useMemo(() => splitTokens(enemyRaw), [enemyRaw]);
+  const { matched, unmatched } = useMemo(
+    () => resolveChampions(tokens, championList),
+    [tokens, championList]
+  );
 
-  const yi = useMemo(() => getYiRuneNote(enemies), [enemies]);
-  const voli = useMemo(() => getVoliNotes(enemies), [enemies]);
+  const enemyNamesNormalized = useMemo(
+    () => matched.map((c) => normalizeLoose(c.name)),
+    [matched]
+  );
 
-  // Build quick lookup: normalized champ name -> champ
-  const champByName = useMemo(() => {
-    if (!champMap) return null;
-    const map = new Map<string, { name: string; imageFull: string }>();
-    Object.values(champMap).forEach((c) => {
-      map.set(normalizeKey(c.name), { name: c.name, imageFull: c.image.full });
-      map.set(normalizeKey(c.id), { name: c.name, imageFull: c.image.full });
-    });
-    return map;
-  }, [champMap]);
-
-  const matchedEnemyIcons = useMemo(() => {
-    if (!version || !champByName) return [];
-    return enemies
-      .map((e) => champByName.get(normalizeKey(e)) || null)
-      .filter(Boolean)
-      .map((c) => ({
-        name: c!.name,
-        url: championIconUrl(version, c!.imageFull),
-      }));
-  }, [enemies, champByName, version]);
+  const yi = useMemo(() => getYiRecommendations(enemyNamesNormalized), [enemyNamesNormalized]);
+  const voli = useMemo(() => getVoliRecommendations(enemyNamesNormalized), [enemyNamesNormalized]);
 
   return (
     <div className="page">
@@ -151,55 +203,56 @@ export default function App() {
         </div>
 
         <div className="row">
-          <label className="label" htmlFor="enemies">
-            Enemy team (comma or newline separated)
-          </label>
+          <label className="label">Enemy team (comma or newline separated)</label>
 
-          {/* Autocomplete textarea */}
-          <div className="textarea">
-            <ChampionTextarea
-              value={enemyRaw}
-              onChange={setEnemyRaw}
-              championList={championList}
-              disabled={loading}
-            />
-          </div>
+          {loading && <div className="muted small">Loading champion data…</div>}
+          {error && <div className="muted small">Couldn’t load Data Dragon: {error}</div>}
 
-          {/* Small status */}
-          {loading && (
-            <div className="hint">
-              <span className="muted">Loading champion list…</span>
-            </div>
-          )}
-          {error && (
-            <div className="hint">
-              <span className="muted">Couldn’t load champion list: {error}</span>
-            </div>
-          )}
+          <ChampionTextarea
+            value={enemyRaw}
+            onChange={setEnemyRaw}
+            championList={championList}
+            disabled={loading || !!error}
+          />
 
           <div className="hint">
-            Parsed: {enemies.length ? enemies.join(", ") : <span className="muted">none</span>}
+            Parsed:{" "}
+            {tokens.length ? tokens.join(", ") : <span className="muted">none</span>}
           </div>
 
-          {/* Icons preview */}
-          {matchedEnemyIcons.length > 0 && (
-            <div className="hint" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {matchedEnemyIcons.map((c) => (
+          {/* Icon chips */}
+          {version && matched.length > 0 && (
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+              {matched.map((c) => (
                 <div
-                  key={c.name}
-                  style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  key={c.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(255,255,255,0.04)",
+                  }}
                   title={c.name}
                 >
                   <img
-                    src={c.url}
+                    src={championIconUrl(version, c)}
                     alt={c.name}
                     width={22}
                     height={22}
                     style={{ borderRadius: 6 }}
                   />
-                  <span className="muted">{c.name}</span>
+                  <span style={{ fontSize: 13 }}>{c.name}</span>
                 </div>
               ))}
+            </div>
+          )}
+
+          {unmatched.length > 0 && (
+            <div className="muted small" style={{ marginTop: 8 }}>
+              Not recognized: {unmatched.join(", ")}
             </div>
           )}
         </div>
@@ -214,16 +267,79 @@ export default function App() {
               <div className="pill">
                 Rune choice: <b>{yi.rune}</b>
               </div>
+              <div className="pill">
+                Skill: <b>{yi.skill}</b>
+              </div>
             </div>
+
             <p className="note">{yi.wNote}</p>
-            <p className="muted small">(MVP logic for now — we’ll refine matchups and add itemization next.)</p>
+
+            <div style={{ marginTop: 14 }}>
+              <div className="label" style={{ marginBottom: 8 }}>
+                Core items (MVP)
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+                {yi.core.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <div className="label" style={{ marginBottom: 8 }}>
+                Situational
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+                {yi.situational.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            </div>
+
+            <p className="muted small" style={{ marginTop: 10 }}>
+              (Next: smarter archetype detection + item/rune branching by comp.)
+            </p>
           </>
         )}
 
         {selected === "volibear" && (
           <>
-            <p className="note">{voli}</p>
-            <p className="muted small">(MVP logic for now — we’ll add rune/build branches for common matchups.)</p>
+            <div className="pillRow">
+              <div className="pill">
+                Runes idea: <b>{voli.runes}</b>
+              </div>
+              <div className="pill">
+                Skill: <b>{voli.skill}</b>
+              </div>
+            </div>
+
+            <p className="note">{voli.lanePlan}</p>
+
+            <div style={{ marginTop: 14 }}>
+              <div className="label" style={{ marginBottom: 8 }}>
+                Core items (MVP)
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+                {voli.core.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <div className="label" style={{ marginBottom: 8 }}>
+                Situational
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+                {voli.situational.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            </div>
+
+            <p className="muted small" style={{ marginTop: 10 }}>
+              (Next: lane matchups by enemy top selection + summoner spell tips.)
+            </p>
           </>
         )}
       </div>
