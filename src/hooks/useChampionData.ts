@@ -1,10 +1,7 @@
 // src/hooks/useChampionData.ts
 import { useEffect, useMemo, useState } from "react";
-import {
-  ChampionMap,
-  fetchChampionMap,
-  fetchLatestDdragonVersion,
-} from "../api/ddragon";
+import type { ChampionMap } from "../api/ddragon";
+import { fetchChampionMap, fetchLatestDdragonVersion } from "../api/ddragon";
 
 type State = {
   loading: boolean;

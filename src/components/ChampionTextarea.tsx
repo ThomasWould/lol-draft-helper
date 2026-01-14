@@ -40,7 +40,6 @@ export function ChampionTextarea({ value, onChange, championList, disabled }: Pr
   function applyChampion(champ: DDragonChampion) {
     // Replace current token with champ.name
     const before = value.slice(0, startIndex);
-    const after = ""; // token is the end portion
     // Keep a single space after comma/newline if user had one
     const sep = before.endsWith(",") || before.endsWith("\n") ? " " : "";
     const next = `${before}${sep}${champ.name}`;
