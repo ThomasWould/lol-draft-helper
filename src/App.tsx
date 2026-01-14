@@ -100,8 +100,10 @@ export default function App() {
 
   // unified recommendations
   const rec: ChampRec = useMemo(() => {
-    return selected === "masteryi" ? getMasterYiRec(tags) : getVolibearRec(tags);
-  }, [selected, tags]);
+  return selected === "masteryi"
+    ? getMasterYiRec(tags)
+    : getVolibearRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
+}, [selected, tags, enemyNamesNormalized, enemyTopNormalized]);
 
   return (
     <div className="page">
