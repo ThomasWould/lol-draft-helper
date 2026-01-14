@@ -7,6 +7,8 @@ type Props = {
   onChange: (next: string) => void;
   championList: DDragonChampion[];
   disabled?: boolean;
+  placeholder?: string;
+  rows?: number;
 };
 
 function normalize(s: string) {
@@ -21,7 +23,14 @@ function getActiveToken(text: string) {
   return { startIndex: start, token };
 }
 
-export function ChampionTextarea({ value, onChange, championList, disabled }: Props) {
+export function ChampionTextarea({
+  value,
+  onChange,
+  championList,
+  disabled,
+  placeholder = "Example: Diana, Zyra, Caitlyn, Darius, Thresh",
+  rows = 4,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
@@ -38,15 +47,27 @@ export function ChampionTextarea({ value, onChange, championList, disabled }: Pr
   }, [q, championList]);
 
   function applyChampion(champ: DDragonChampion) {
-    // Replace current token with champ.name
+    // Replace current token with champ.name (+ comma+space so user can keep typing)
     const before = value.slice(0, startIndex);
-    // Keep a single space after comma/newline if user had one
-    const sep = before.endsWith(",") || before.endsWith("\n") ? " " : "";
-    const next = `${before}${sep}${champ.name}`;
+    const beforeTrimmedRight = before.replace(/[ \t]+$/g, ""); // avoid double spaces
+
+    const needsSpaceAfterSeparator = beforeTrimmedRight.endsWith(",") || beforeTrimmedRight.endsWith("\n");
+    const sepSpace = needsSpaceAfterSeparator ? " " : "";
+
+    // If user is mid-token, replace it; if token empty, just append
+    const nextBase = `${beforeTrimmedRight}${sepSpace}${champ.name}`;
+
+    // Add comma+space to continue drafting unless user is using newline style
+    const addComma =
+      // if they’re already using newlines as separators at least once, keep newline style
+      value.includes("\n") && !value.includes(",") ? "\n" : ", ";
+
+    const next = `${nextBase}${addComma}`;
+
     onChange(next);
     setOpen(false);
+    setHighlight(0);
 
-    // Put cursor at end
     requestAnimationFrame(() => {
       const el = taRef.current;
       if (!el) return;
@@ -58,20 +79,24 @@ export function ChampionTextarea({ value, onChange, championList, disabled }: Pr
   return (
     <div style={{ position: "relative" }}>
       <textarea
+        className="textarea"
         ref={taRef}
         disabled={disabled}
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
-          setOpen(true);
           setHighlight(0);
+          setOpen(true);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          if (q) setOpen(true);
+        }}
         onBlur={() => {
           // slight delay so clicking suggestion works
           setTimeout(() => setOpen(false), 120);
         }}
         onKeyDown={(e) => {
+          // Only handle keys when dropdown is open and we have suggestions
           if (!open || suggestions.length === 0) return;
 
           if (e.key === "ArrowDown") {
@@ -81,7 +106,6 @@ export function ChampionTextarea({ value, onChange, championList, disabled }: Pr
             e.preventDefault();
             setHighlight((h) => Math.max(h - 1, 0));
           } else if (e.key === "Enter" || e.key === "Tab") {
-            // only autocomplete if user is actively typing a token
             if (q) {
               e.preventDefault();
               applyChampion(suggestions[highlight]);
@@ -90,12 +114,11 @@ export function ChampionTextarea({ value, onChange, championList, disabled }: Pr
             setOpen(false);
           }
         }}
-        placeholder="Example: Diana, Zyra, Caitlyn, Darius, Thresh"
-        rows={4}
-        style={{ width: "100%" }}
+        placeholder={placeholder}
+        rows={rows}
       />
 
-      {open && suggestions.length > 0 && q && (
+      {open && q && suggestions.length > 0 && (
         <div
           style={{
             position: "absolute",

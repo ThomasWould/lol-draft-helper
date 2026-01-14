@@ -4,6 +4,11 @@ import { useChampionData } from "./hooks/useChampionData";
 import { ChampionTextarea } from "./components/ChampionTextarea";
 import type { DDragonChampion } from "./api/ddragon";
 
+// recommendations + tags
+import { getDraftTags, tagsToPills } from "./recommendations/tags";
+import { getMasterYiRec, type ChampRec } from "./recommendations/masterYi";
+import { getVolibearRec } from "./recommendations/volibear";
+
 type ChampionKey = "masteryi" | "volibear";
 
 const CHAMPIONS: { key: ChampionKey; label: string; role: string }[] = [
@@ -53,102 +58,23 @@ function resolveChampions(tokens: string[], championList: DDragonChampion[]) {
 }
 
 function championIconUrl(version: string, champ: DDragonChampion) {
-  // Data Dragon: /cdn/<version>/img/champion/<image.full>
   return `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champ.image.full}`;
 }
 
-/** ---- Recommendation Logic (MVP, easy to expand) ---- */
-
-function getYiRecommendations(enemyNames: string[]) {
-  // Basic heuristics; we’ll refine with real archetypes later.
-  const tanky = new Set([
-    "drmundo",
-    "mundo",
-    "ornn",
-    "sion",
-    "zac",
-    "sejuani",
-    "rammus",
-    "malphite",
-    "chogath",
-    "tahmkench",
-  ]);
-
-  const heavyCcBurst = new Set([
-    "lissandra",
-    "leona",
-    "nautilus",
-    "rengar",
-    "khazix",
-    "vi",
-    "syndra",
-    "zed",
-    "fizz",
-    "diana",
-    "annie",
-  ]);
-
-  const tanks = enemyNames.filter((n) => tanky.has(n)).length;
-  const burstCc = enemyNames.filter((n) => heavyCcBurst.has(n)).length;
-
-  const rune = tanks >= 2 ? "Cut Down" : "Coup de Grace";
-  const wNote =
-    burstCc >= 2
-      ? "Lots of burst/CC — consider 1–2 early points in W (Meditate) to survive spikes."
-      : "Standard skill path is fine; early W points are situational.";
-
-  // Itemization: keep it simple + broadly correct.
-  const core = [
-    "Kraken Slayer (or your preferred DPS first item)",
-    "Guinsoo’s Rageblade (if on-hit)",
-    "Wit’s End (vs AP / mixed)",
-  ];
-
-  const situational = [
-    "Blade of the Ruined King (vs high-HP/tanks)",
-    "Death’s Dance (vs heavy AD burst)",
-    "Guardian Angel (vs shutdown / late fights)",
-    "Mercury Treads (vs lots of CC) / Steelcaps (vs heavy AD)",
-  ];
-
-  const skill = "Typical: Max Q → E → W (adjust W early if needed).";
-
-  return { rune, wNote, skill, core, situational };
-}
-
-function getVoliRecommendations(enemyNames: string[]) {
-  const rangedTop = new Set(["teemo", "vayne", "quinn", "kennen", "jayce"]);
-  const hasRanged = enemyNames.some((n) => rangedTop.has(n));
-
-  const lanePlan = hasRanged
-    ? "Likely ranged/poke lane — consider Doran’s Shield + Second Wind style setup; play for all-in windows post-6."
-    : "Standard bruiser lane — look for short trades into all-in windows; manage waves for dive threat with R.";
-
-  const runes = hasRanged
-    ? "Runes idea: Grasp (safer) or PTA (kill pressure) + Second Wind."
-    : "Runes idea: PTA (kill pressure) or Grasp (matchup dependent).";
-
-  const core = [
-    "Plated Steelcaps / Merc Treads (matchup)",
-    "Sundered Sky / Iceborn-style tanky item (matchup dependent)",
-    "Spirit Visage (synergy with healing) or Frozen Heart (vs AS/AD)",
-  ];
-
-  const situational = [
-    "Thornmail / Bramble (vs healing)",
-    "Force of Nature (vs heavy AP)",
-    "Randuin’s (vs crit)",
-    "Hullbreaker (if split is the wincon)",
-  ];
-
-  const skill = "Typical: Max W → Q → E (E for setup/shield; W for sustain/trades).";
-
-  return { lanePlan, runes, skill, core, situational };
+// Remove one champ occurrence from the raw input
+function removeEnemy(champName: string, raw: string) {
+  const toks = splitTokens(raw);
+  const target = normalizeLoose(champName);
+  const idx = toks.findIndex((t) => normalizeLoose(t) === target);
+  if (idx === -1) return raw;
+  toks.splice(idx, 1);
+  return toks.join(", ");
 }
 
 export default function App() {
   const [selected, setSelected] = useState<ChampionKey>("masteryi");
   const [enemyRaw, setEnemyRaw] = useState("");
+  const [enemyTopRaw, setEnemyTopRaw] = useState(""); // optional for Voli
 
   const { loading, error, version, championList } = useChampionData();
 
@@ -163,8 +89,19 @@ export default function App() {
     [matched]
   );
 
-  const yi = useMemo(() => getYiRecommendations(enemyNamesNormalized), [enemyNamesNormalized]);
-  const voli = useMemo(() => getVoliRecommendations(enemyNamesNormalized), [enemyNamesNormalized]);
+  const enemyTopNormalized = useMemo(() => normalizeLoose(enemyTopRaw), [enemyTopRaw]);
+
+  // tags + pills from your tag engine
+  const tags = useMemo(() => {
+    return getDraftTags(enemyNamesNormalized, enemyTopNormalized || undefined);
+  }, [enemyNamesNormalized, enemyTopNormalized]);
+
+  const tagPills = useMemo(() => tagsToPills(tags), [tags]);
+
+  // unified recommendations
+  const rec: ChampRec = useMemo(() => {
+    return selected === "masteryi" ? getMasterYiRec(tags) : getVolibearRec(tags);
+  }, [selected, tags]);
 
   return (
     <div className="page">
@@ -185,163 +122,193 @@ export default function App() {
         </a>
       </header>
 
-      <div className="card">
-        <div className="row">
-          <label className="label">Pick your champion</label>
-          <div className="segmented">
-            {CHAMPIONS.map((c) => (
-              <button
-                key={c.key}
-                className={`segBtn ${selected === c.key ? "active" : ""}`}
-                onClick={() => setSelected(c.key)}
-                type="button"
-              >
-                {c.label} <span className="muted">({c.role})</span>
-              </button>
-            ))}
+      {/* ✅ 2-column grid on desktop, stacked on mobile */}
+      <div className="grid">
+        {/* LEFT: Inputs */}
+        <div className="card">
+          <div className="row">
+            <label className="label">Pick your champion</label>
+            <div className="segmented">
+              {CHAMPIONS.map((c) => (
+                <button
+                  key={c.key}
+                  className={`segBtn ${selected === c.key ? "active" : ""}`}
+                  onClick={() => setSelected(c.key)}
+                  type="button"
+                >
+                  {c.label} <span className="muted">({c.role})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="row">
+            <label className="label">Enemy team (comma or newline separated)</label>
+
+            {loading && <div className="muted small">Loading champion data…</div>}
+            {error && <div className="muted small">Couldn’t load Data Dragon: {error}</div>}
+
+            <ChampionTextarea
+              value={enemyRaw}
+              onChange={setEnemyRaw}
+              championList={championList}
+              disabled={loading || !!error}
+            />
+
+            <div className="hint">
+              Parsed: {tokens.length ? tokens.join(", ") : <span className="muted">none</span>}
+            </div>
+
+            {/* Icon chips (click to remove) */}
+            {version && matched.length > 0 && (
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+                {matched.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className="chip"
+                    title="Click to remove"
+                    onClick={() => setEnemyRaw((prev) => removeEnemy(c.name, prev))}
+                  >
+                    <img
+                      src={championIconUrl(version, c)}
+                      alt={c.name}
+                      width={22}
+                      height={22}
+                      style={{ borderRadius: 6 }}
+                    />
+                    <span style={{ fontSize: 13 }}>{c.name}</span>
+                    <span className="chipX">×</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {unmatched.length > 0 && (
+              <div className="muted small" style={{ marginTop: 8 }}>
+                Not recognized: {unmatched.join(", ")}
+              </div>
+            )}
+
+            {/* Detected summary (from tags.counts) */}
+            {matched.length > 0 && (
+              <div className="hint" style={{ marginTop: 10 }}>
+                <b>Detected:</b>{" "}
+                {[
+                  tags.counts.tanks ? `${tags.counts.tanks} tank${tags.counts.tanks === 1 ? "" : "s"}` : null,
+                  tags.counts.ccBurst ? `${tags.counts.ccBurst} burst/CC` : null,
+                  tags.counts.ap ? `${tags.counts.ap} AP` : null,
+                  tags.counts.ad ? `${tags.counts.ad} AD` : null,
+                  tags.counts.healing ? `${tags.counts.healing} healing` : null,
+                  tags.rangedTop ? "ranged top (from top pick)" : null,
+                ]
+                  .filter(Boolean)
+                  .join(" • ")}
+              </div>
+            )}
+
+
+            {/* Optional enemy top (only for Volibear) */}
+            {selected === "volibear" && (
+              <div style={{ marginTop: 14 }}>
+                <label className="label">Enemy top (optional — improves Volibear advice)</label>
+                <ChampionTextarea
+                  value={enemyTopRaw}
+                  onChange={setEnemyTopRaw}
+                  championList={championList}
+                  disabled={loading || !!error}
+                />
+                <div className="hint">
+                  Tip: put the likely enemy top laner here (e.g., Teemo, Quinn, Gnar). This helps detect ranged/poke lanes.
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="row">
-          <label className="label">Enemy team (comma or newline separated)</label>
+        {/* RIGHT: Recommendations */}
+        <div className="card">
+          <h2>Recommendations</h2>
 
-          {loading && <div className="muted small">Loading champion data…</div>}
-          {error && <div className="muted small">Couldn’t load Data Dragon: {error}</div>}
-
-          <ChampionTextarea
-            value={enemyRaw}
-            onChange={setEnemyRaw}
-            championList={championList}
-            disabled={loading || !!error}
-          />
-
-          <div className="hint">
-            Parsed:{" "}
-            {tokens.length ? tokens.join(", ") : <span className="muted">none</span>}
-          </div>
-
-          {/* Icon chips */}
-          {version && matched.length > 0 && (
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
-              {matched.map((c) => (
-                <div
-                  key={c.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "6px 10px",
-                    borderRadius: 999,
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    background: "rgba(255,255,255,0.04)",
-                  }}
-                  title={c.name}
-                >
-                  <img
-                    src={championIconUrl(version, c)}
-                    alt={c.name}
-                    width={22}
-                    height={22}
-                    style={{ borderRadius: 6 }}
-                  />
-                  <span style={{ fontSize: 13 }}>{c.name}</span>
+          {/* Tag pills */}
+          {tagPills.length > 0 && (
+            <div className="pillRow" style={{ marginTop: 10 }}>
+              {tagPills.map((p) => (
+                <div key={p} className="pill">
+                  {p}
                 </div>
               ))}
             </div>
           )}
 
-          {unmatched.length > 0 && (
-            <div className="muted small" style={{ marginTop: 8 }}>
-              Not recognized: {unmatched.join(", ")}
+          <div style={{ marginTop: 10 }}>
+            <div className="label" style={{ marginBottom: 8 }}>
+              Runes
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+              {rec.runes.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div style={{ marginTop: 14 }}>
+            <div className="label" style={{ marginBottom: 8 }}>
+              Skill order
+            </div>
+            <p className="note">{rec.skillOrder}</p>
+          </div>
+
+          <div style={{ marginTop: 14 }}>
+            <div className="label" style={{ marginBottom: 8 }}>
+              Start
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+              {rec.starter.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div style={{ marginTop: 14 }}>
+            <div className="label" style={{ marginBottom: 8 }}>
+              Core
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+              {rec.coreItems.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div style={{ marginTop: 14 }}>
+            <div className="label" style={{ marginBottom: 8 }}>
+              Situational
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+              {rec.situational.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+          </div>
+
+          {rec.notes.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div className="label" style={{ marginBottom: 8 }}>
+                Notes
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+                {rec.notes.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
             </div>
           )}
+
+          <p className="muted small" style={{ marginTop: 10 }}>
+            (Next: tighten tag detection + add matchup-specific branches.)
+          </p>
         </div>
-      </div>
-
-      <div className="card">
-        <h2>Recommendations</h2>
-
-        {selected === "masteryi" && (
-          <>
-            <div className="pillRow">
-              <div className="pill">
-                Rune choice: <b>{yi.rune}</b>
-              </div>
-              <div className="pill">
-                Skill: <b>{yi.skill}</b>
-              </div>
-            </div>
-
-            <p className="note">{yi.wNote}</p>
-
-            <div style={{ marginTop: 14 }}>
-              <div className="label" style={{ marginBottom: 8 }}>
-                Core items (MVP)
-              </div>
-              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
-                {yi.core.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div style={{ marginTop: 14 }}>
-              <div className="label" style={{ marginBottom: 8 }}>
-                Situational
-              </div>
-              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
-                {yi.situational.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
-            </div>
-
-            <p className="muted small" style={{ marginTop: 10 }}>
-              (Next: smarter archetype detection + item/rune branching by comp.)
-            </p>
-          </>
-        )}
-
-        {selected === "volibear" && (
-          <>
-            <div className="pillRow">
-              <div className="pill">
-                Runes idea: <b>{voli.runes}</b>
-              </div>
-              <div className="pill">
-                Skill: <b>{voli.skill}</b>
-              </div>
-            </div>
-
-            <p className="note">{voli.lanePlan}</p>
-
-            <div style={{ marginTop: 14 }}>
-              <div className="label" style={{ marginBottom: 8 }}>
-                Core items (MVP)
-              </div>
-              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
-                {voli.core.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div style={{ marginTop: 14 }}>
-              <div className="label" style={{ marginBottom: 8 }}>
-                Situational
-              </div>
-              <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
-                {voli.situational.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
-            </div>
-
-            <p className="muted small" style={{ marginTop: 10 }}>
-              (Next: lane matchups by enemy top selection + summoner spell tips.)
-            </p>
-          </>
-        )}
       </div>
 
       <footer className="footer">
