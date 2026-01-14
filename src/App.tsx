@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
 import "./App.css";
+import { useChampionData } from "./hooks/useChampionData";
+import { ChampionTextarea } from "./components/ChampionTextarea";
+import { championIconUrl } from "./api/ddragon";
 
 type ChampionKey = "masteryi" | "volibear";
 
@@ -16,8 +19,12 @@ function normalize(input: string) {
     .replace(/\s+/g, " ");
 }
 
+// a stricter normalize for matching Data Dragon names
+function normalizeKey(input: string) {
+  return normalize(input).replace(/[^a-z0-9 ]/g, "");
+}
+
 function splitChampions(raw: string): string[] {
-  // Allow commas or new lines
   return raw
     .split(/,|\n/)
     .map((s) => normalize(s))
@@ -25,14 +32,37 @@ function splitChampions(raw: string): string[] {
 }
 
 function getYiRuneNote(enemies: string[]) {
-  // crude heuristic: lots of tanky champs -> Cut Down. Otherwise Coup.
-  const tankyKeywords = ["mundo", "ornn", "sion", "zac", "sejuani", "rammus", "malphite", "cho gath", "chogath", "tahm", "tahm kench"];
+  const tankyKeywords = [
+    "mundo",
+    "ornn",
+    "sion",
+    "zac",
+    "sejuani",
+    "rammus",
+    "malphite",
+    "cho gath",
+    "chogath",
+    "tahm",
+    "tahm kench",
+  ];
   const tankCount = enemies.filter((e) => tankyKeywords.some((t) => e.includes(t))).length;
 
   const rune = tankCount >= 2 ? "Cut Down" : "Coup de Grace";
 
-  // W early points heuristic: heavy burst/cc -> 1–2 points W can help stabilize
-  const burstCcKeywords = ["annie", "lissandra", "leona", "nautilus", "rengar", "kha", "khazix", "vi", "syndra", "zed", "fizz", "diana"];
+  const burstCcKeywords = [
+    "annie",
+    "lissandra",
+    "leona",
+    "nautilus",
+    "rengar",
+    "kha",
+    "khazix",
+    "vi",
+    "syndra",
+    "zed",
+    "fizz",
+    "diana",
+  ];
   const burstCount = enemies.filter((e) => burstCcKeywords.some((b) => e.includes(b))).length;
   const wNote =
     burstCount >= 2
@@ -43,7 +73,6 @@ function getYiRuneNote(enemies: string[]) {
 }
 
 function getVoliNotes(enemies: string[]) {
-  // placeholder logic for MVP
   const rangedTopKeywords = ["teemo", "vayne", "quinn", "kennen", "jayce"];
   const rangedTop = enemies.some((e) => rangedTopKeywords.some((r) => e.includes(r)));
   return rangedTop
@@ -54,10 +83,36 @@ function getVoliNotes(enemies: string[]) {
 export default function App() {
   const [selected, setSelected] = useState<ChampionKey>("masteryi");
   const [enemyRaw, setEnemyRaw] = useState("");
+
+  // Data Dragon load
+  const { loading, error, version, champMap, championList } = useChampionData();
+
   const enemies = useMemo(() => splitChampions(enemyRaw), [enemyRaw]);
 
   const yi = useMemo(() => getYiRuneNote(enemies), [enemies]);
   const voli = useMemo(() => getVoliNotes(enemies), [enemies]);
+
+  // Build quick lookup: normalized champ name -> champ
+  const champByName = useMemo(() => {
+    if (!champMap) return null;
+    const map = new Map<string, { name: string; imageFull: string }>();
+    Object.values(champMap).forEach((c) => {
+      map.set(normalizeKey(c.name), { name: c.name, imageFull: c.image.full });
+      map.set(normalizeKey(c.id), { name: c.name, imageFull: c.image.full });
+    });
+    return map;
+  }, [champMap]);
+
+  const matchedEnemyIcons = useMemo(() => {
+    if (!version || !champByName) return [];
+    return enemies
+      .map((e) => champByName.get(normalizeKey(e)) || null)
+      .filter(Boolean)
+      .map((c) => ({
+        name: c!.name,
+        url: championIconUrl(version, c!.imageFull),
+      }));
+  }, [enemies, champByName, version]);
 
   return (
     <div className="page">
@@ -68,7 +123,12 @@ export default function App() {
             Fast draft notes for <b>Master Yi (Jungle)</b> and <b>Volibear (Top)</b>.
           </p>
         </div>
-        <a className="link" href="https://github.com/ThomasWould/lol-draft-helper" target="_blank" rel="noreferrer">
+        <a
+          className="link"
+          href="https://github.com/ThomasWould/lol-draft-helper"
+          target="_blank"
+          rel="noreferrer"
+        >
           GitHub
         </a>
       </header>
@@ -94,16 +154,54 @@ export default function App() {
           <label className="label" htmlFor="enemies">
             Enemy team (comma or newline separated)
           </label>
-          <textarea
-            id="enemies"
-            className="textarea"
-            placeholder="Example: Diana, Zyra, Caitlyn, Darius, Thresh"
-            value={enemyRaw}
-            onChange={(e) => setEnemyRaw(e.target.value)}
-          />
+
+          {/* Autocomplete textarea */}
+          <div className="textarea">
+            <ChampionTextarea
+              value={enemyRaw}
+              onChange={setEnemyRaw}
+              championList={championList}
+              disabled={loading}
+            />
+          </div>
+
+          {/* Small status */}
+          {loading && (
+            <div className="hint">
+              <span className="muted">Loading champion list…</span>
+            </div>
+          )}
+          {error && (
+            <div className="hint">
+              <span className="muted">Couldn’t load champion list: {error}</span>
+            </div>
+          )}
+
           <div className="hint">
             Parsed: {enemies.length ? enemies.join(", ") : <span className="muted">none</span>}
           </div>
+
+          {/* Icons preview */}
+          {matchedEnemyIcons.length > 0 && (
+            <div className="hint" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {matchedEnemyIcons.map((c) => (
+                <div
+                  key={c.name}
+                  style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  title={c.name}
+                >
+                  <img
+                    src={c.url}
+                    alt={c.name}
+                    width={22}
+                    height={22}
+                    style={{ borderRadius: 6 }}
+                  />
+                  <span className="muted">{c.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -118,18 +216,14 @@ export default function App() {
               </div>
             </div>
             <p className="note">{yi.wNote}</p>
-            <p className="muted small">
-              (MVP logic for now — we’ll refine matchups and add itemization next.)
-            </p>
+            <p className="muted small">(MVP logic for now — we’ll refine matchups and add itemization next.)</p>
           </>
         )}
 
         {selected === "volibear" && (
           <>
             <p className="note">{voli}</p>
-            <p className="muted small">
-              (MVP logic for now — we’ll add rune/build branches for common matchups.)
-            </p>
+            <p className="muted small">(MVP logic for now — we’ll add rune/build branches for common matchups.)</p>
           </>
         )}
       </div>
