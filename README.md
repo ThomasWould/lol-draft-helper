@@ -1,4 +1,4 @@
-# LoL Draft Helper (MVP)
+# LoL Draft Helper (MVP) trigger vercel deploy
 
 A simple League of Legends draft helper web app built with React + TypeScript.
 Currently supports quick draft recommendations for:
