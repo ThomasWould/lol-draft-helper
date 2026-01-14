@@ -127,7 +127,7 @@ export default function App() {
       {/* ✅ 2-column grid on desktop, stacked on mobile */}
       <div className="grid">
         {/* LEFT: Inputs */}
-        <div className="card">
+        <div className="card inputsCard">
           <div className="row">
             <label className="label">Pick your champion</label>
             <div className="segmented">
@@ -229,7 +229,7 @@ export default function App() {
         </div>
 
         {/* RIGHT: Recommendations */}
-        <div className="card cardSticky">
+        <div className="card cardSticky cardGlow">
           <h2>Recommendations</h2>
 
           {/* Tag pills */}
@@ -257,7 +257,7 @@ export default function App() {
             );
           })}
         </div>
-
+        <div className="divider" />
 
           {/* Items in order */}
           <div style={{ marginTop: 14 }}>
@@ -265,20 +265,22 @@ export default function App() {
               ITEMS (IN ORDER):
             </div>
 
-            <ol style={{ margin: 0, paddingLeft: 20, lineHeight: 1.85 }}>
+            <ul className="itemList">
               {rec.itemsOrdered.map((it, idx) => (
-                <li key={`${it.name}-${idx}`}>
-                  <span>{it.name}</span>
+                <li key={`${it.name}-${idx}`} className="itemRow">
+                  <span className="itemNum">{idx + 1}</span>
+                  <span className="itemName">{it.name}</span>
                   {it.note &&
-                  (it.note.includes("BUY HERE") ? (
-                    <span className="buyHere">{it.note}</span>
-                  ) : (
-                    <span style={{ marginLeft: 10, opacity: 0.85 }}>{it.note}</span>
-                  ))}
+                    (it.note.includes("BUY HERE") ? (
+                      <span className="buyHere">{it.note}</span>
+                    ) : (
+                      <span className="itemNote">{it.note}</span>
+                    ))}
                 </li>
               ))}
-            </ol>
+            </ul>
           </div>
+          <div className="divider" />
 
           {/* Fight rule */}
           {rec.fightRule && (

@@ -70,10 +70,11 @@ body {
 /* 2-column grid: centered, balanced */
 .grid {
   display: grid;
-  grid-template-columns: 360px minmax(420px, 1fr);
-  gap: 16px;
+  grid-template-columns: 380px minmax(520px, 820px);
+  gap: 18px;
   align-items: start;
   justify-content: center;
+  margin: 0 auto;
 }
 
 @media (min-width: 900px) {
@@ -93,9 +94,10 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 14px;
-  padding: 14px 14px 4px;
   border-radius: var(--radius);
+  max-width: calc(380px + 820px + 18px); /* left + right + gap */
+  margin: 0 auto 14px;
+  padding: 14px 2px 6px;
 }
 
 h1 {
@@ -132,6 +134,10 @@ h2 {
   overflow: hidden;
 }
 
+.card.inputsCard .row {
+  margin-bottom: 12px;
+}
+
 /* gradient border glow */
 .card::before {
   content: "";
@@ -160,6 +166,22 @@ h2 {
 .card:hover {
   transform: translateY(-1px);
   transition: transform 140ms ease;
+}
+
+.cardGlow {
+  position: relative;
+}
+
+.cardGlow::after {
+  content: "";
+  position: absolute;
+  inset: -40px -30px -40px -30px;
+  background:
+    radial-gradient(600px 320px at 20% 20%, rgba(120, 90, 255, 0.22), transparent 60%),
+    radial-gradient(520px 300px at 90% 40%, rgba(0, 200, 255, 0.16), transparent 62%);
+  filter: blur(10px);
+  opacity: 0.8;
+  z-index: -1;
 }
 
 @media (min-width: 981px) {
@@ -405,4 +427,53 @@ body::before {
 .page {
   position: relative;
   z-index: 1;
+}
+
+.itemList {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.itemRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.03);
+}
+
+.itemNum {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.18);
+  opacity: 0.9;
+  flex: 0 0 auto;
+}
+
+.itemName {
+  font-weight: 650;
+}
+
+.itemNote {
+  margin-left: 8px;
+  opacity: 0.82;
+  font-size: 13px;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 14px 0;
 }
