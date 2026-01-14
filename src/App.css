@@ -1,42 +1,123 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.page {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 16px 40px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+h1 {
+  margin: 0;
+  font-size: 28px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.sub {
+  margin: 6px 0 0;
+  opacity: 0.85;
 }
 
 .card {
-  padding: 2em;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 14px 0;
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.read-the-docs {
-  color: #888;
+.row {
+  margin-bottom: 14px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.segBtn {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.segBtn.active {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  padding: 10px 12px;
+  line-height: 1.4;
+}
+
+.hint {
+  margin-top: 8px;
+  opacity: 0.85;
+  font-size: 13px;
+}
+
+.pillRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0 10px;
+}
+
+.pill {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.note {
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+.link {
+  opacity: 0.85;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.link:hover {
+  opacity: 1;
+}
+
+.muted {
+  opacity: 0.75;
+}
+
+.small {
+  font-size: 12px;
+}
+
+.footer {
+  margin-top: 10px;
 }
