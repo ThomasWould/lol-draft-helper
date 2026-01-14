@@ -101,7 +101,7 @@ export default function App() {
   // unified recommendations
   const rec: ChampRec = useMemo(() => {
   return selected === "masteryi"
-    ? getMasterYiRec(tags)
+    ? getMasterYiRec(tags, enemyNamesNormalized)
     : getVolibearRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
 }, [selected, tags, enemyNamesNormalized, enemyTopNormalized]);
 
@@ -229,7 +229,7 @@ export default function App() {
         </div>
 
         {/* RIGHT: Recommendations */}
-        <div className="card">
+        <div className="card cardSticky">
           <h2>Recommendations</h2>
 
           {/* Tag pills */}
@@ -244,13 +244,20 @@ export default function App() {
           )}
 
           {/* Coach-note style headline lines */}
-          <div style={{ marginTop: 12, lineHeight: 1.7 }}>
-            {rec.headlineLines.map((line) => (
-              <div key={line} style={{ marginBottom: 4 }}>
-                <b>{line}</b>
+          <div className="recLines">
+          {rec.headlineLines.map((line) => {
+            const idx = line.indexOf(":");
+            const key = idx !== -1 ? line.slice(0, idx) : "NOTE";
+            const val = idx !== -1 ? line.slice(idx + 1).trim() : line;
+            return (
+              <div key={line} className="recLine">
+                <div className="recKey">{key}</div>
+                <div className="recVal">{val}</div>
               </div>
-            ))}
-          </div>
+            );
+          })}
+        </div>
+
 
           {/* Items in order */}
           <div style={{ marginTop: 14 }}>
@@ -262,7 +269,12 @@ export default function App() {
               {rec.itemsOrdered.map((it, idx) => (
                 <li key={`${it.name}-${idx}`}>
                   <span>{it.name}</span>
-                  {it.note && <span style={{ marginLeft: 10, opacity: 0.9 }}>{it.note}</span>}
+                  {it.note &&
+                  (it.note.includes("BUY HERE") ? (
+                    <span className="buyHere">{it.note}</span>
+                  ) : (
+                    <span style={{ marginLeft: 10, opacity: 0.85 }}>{it.note}</span>
+                  ))}
                 </li>
               ))}
             </ol>
