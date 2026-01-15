@@ -8,6 +8,7 @@ import type { DDragonChampion } from "./api/ddragon";
 import { getDraftTagsFromTraits, tagsToPills } from "./recommendations/tags";
 import { getMasterYiRec, type ChampRec } from "./recommendations/masterYi";
 import { getVolibearRec } from "./recommendations/volibear";
+import { EnemyScout } from "./components/EnemyScout";
 
 type ChampionKey = "masteryi" | "volibear";
 
@@ -217,6 +218,9 @@ export default function App() {
               </div>
             )}
 
+            {matched.length > 0 && (
+              <EnemyScout selected={selected} enemies={matched} />
+            )}
 
             {/* Optional enemy top (only for Volibear) */}
             {selected === "volibear" && (

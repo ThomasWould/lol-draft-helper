@@ -572,3 +572,96 @@ textarea:focus {
     margin-top: 6px;
   }
 }
+
+/* --- Enemy Scout (below Detected) --- */
+.scoutDetails {
+  margin-top: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.03);
+  overflow: hidden;
+}
+
+.scoutSummary {
+  cursor: pointer;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.86);
+  list-style: none;
+  user-select: none;
+}
+
+.scoutSummary::-webkit-details-marker {
+  display: none;
+}
+
+.scoutSummary::after {
+  content: "▾";
+  float: right;
+  opacity: 0.8;
+}
+
+.scoutDetails[open] .scoutSummary::after {
+  content: "▴";
+}
+
+.scoutList {
+  padding: 10px 12px 12px;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.scoutRow {
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.14);
+}
+
+.scoutTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.scoutName {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.scoutTags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.scoutTag {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  opacity: 0.92;
+}
+
+.scoutTitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.86);
+  opacity: 0.95;
+}
+
+.scoutBullets {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: rgba(255,255,255,0.82);
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+.scoutBullets li {
+  margin: 4px 0;
+}
