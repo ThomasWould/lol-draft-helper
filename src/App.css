@@ -665,3 +665,129 @@ textarea:focus {
 .scoutBullets li {
   margin: 4px 0;
 }
+
+/* -------- Coach Chat Drawer -------- */
+.coachFab{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 50;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.92);
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.coachFab:hover{ transform: translateY(-1px); }
+
+.coachOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 60;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.coachDrawer{
+  width: min(520px, 92vw);
+  height: 100%;
+  background: linear-gradient(180deg, rgba(18,20,28,0.92), rgba(12,13,18,0.92));
+  border-left: 1px solid rgba(255,255,255,0.10);
+  box-shadow: -20px 0 60px rgba(0,0,0,0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+}
+
+.coachHeader{
+  padding: 14px 14px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.coachTitle{ font-weight: 800; font-size: 16px; }
+.coachSub{ font-size: 12px; opacity: 0.75; }
+
+.coachClose{
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.9);
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 0;
+}
+
+.coachBody{
+  padding: 12px 12px 0;
+  flex: 1;
+  overflow: auto;
+}
+
+.coachMsg{
+  display: flex;
+  margin: 10px 0;
+}
+
+.coachMsg.user{ justify-content: flex-end; }
+.coachMsg.assistant{ justify-content: flex-start; }
+
+.coachBubble{
+  max-width: 86%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  line-height: 1.45;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.coachMsg.user .coachBubble{
+  background: rgba(120,90,255,0.14);
+  border-color: rgba(120,90,255,0.30);
+}
+
+.coachInputRow{
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.coachInput{
+  flex: 1;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.25);
+  color: rgba(255,255,255,0.92);
+  padding: 10px 12px;
+  outline: none;
+}
+
+.coachSend{
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.92);
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.coachSend:disabled{ opacity: 0.6; cursor: not-allowed; }
+
+@media (max-width: 520px){
+  .coachFab{ right: 12px; bottom: 12px; }
+}

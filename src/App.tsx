@@ -9,6 +9,7 @@ import { getDraftTagsFromTraits, tagsToPills } from "./recommendations/tags";
 import { getMasterYiRec, type ChampRec } from "./recommendations/masterYi";
 import { getVolibearRec } from "./recommendations/volibear";
 import { EnemyScout } from "./components/EnemyScout";
+import { CoachChat } from "./components/CoachChat";
 
 type ChampionKey = "masteryi" | "volibear";
 
@@ -374,6 +375,12 @@ export default function App() {
       <footer className="footer">
         <span className="muted small">Tip: bookmark this page so you can open it during champ select.</span>
       </footer>
+      <CoachChat
+        selected={selected}
+        enemyNames={enemyNamesNormalized}
+        enemyTop={selected === "volibear" ? enemyTopNormalized : undefined}
+        tags={tags}
+      />
     </div>
   );
 }
