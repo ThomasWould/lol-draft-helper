@@ -5,7 +5,7 @@ import { ChampionTextarea } from "./components/ChampionTextarea";
 import type { DDragonChampion } from "./api/ddragon";
 
 // recommendations + tags
-import { getDraftTags, tagsToPills } from "./recommendations/tags";
+import { getDraftTagsFromTraits, tagsToPills } from "./recommendations/tags";
 import { getMasterYiRec, type ChampRec } from "./recommendations/masterYi";
 import { getVolibearRec } from "./recommendations/volibear";
 
@@ -96,8 +96,12 @@ export default function App() {
 
   // tags + pills from your tag engine
   const tags = useMemo(() => {
-    return getDraftTags(enemyNamesNormalized, enemyTopNormalized || undefined);
-  }, [enemyNamesNormalized, enemyTopNormalized]);
+    return getDraftTagsFromTraits(
+      enemyNamesNormalized,
+      championList,
+      enemyTopNormalized || undefined
+    );
+  }, [enemyNamesNormalized, enemyTopNormalized, championList]);
 
   const tagPills = useMemo(() => tagsToPills(tags), [tags]);
 

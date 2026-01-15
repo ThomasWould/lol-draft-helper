@@ -4,6 +4,10 @@ export type DDragonChampion = {
     key: string;         // "266"
     name: string;        // "Aatrox"
     image: { full: string }; // "Aatrox.png"
+    tags: string[];
+    stats: {
+    attackrange: number;
+  };
   };
   
   export type ChampionMap = Record<string, DDragonChampion>;
