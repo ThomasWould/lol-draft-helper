@@ -161,7 +161,7 @@ const startLine =
     headlineLines: [runesLine, startLine, tearLine, laneRule],
     itemsOrdered: core6,
     fightRule,
-
+    bans: ["Teemo", "Urgot", "Dr. Mundo", "Kennen", "Vayne"],
     // Keep old fields populated (still useful if you ever want expandable details)
     runes: [
       topIsRanged || tags.rangedTop

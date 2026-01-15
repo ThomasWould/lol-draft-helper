@@ -10,6 +10,7 @@ export type ChampRec = {
   headlineLines: string[];
   itemsOrdered: OrderedItem[];
   fightRule?: string;
+  bans?: string[];
 
   // (kept for later expansion / optional collapsible details)
   runes: string[];
@@ -147,7 +148,7 @@ export function getMasterYiRec(tags: DraftTags, enemies: string[] = []): ChampRe
     headlineLines: [runeLine, hobLine, wPointsLine, startLine],
     itemsOrdered: core6,
     fightRule,
-
+    bans: ["Rammus", "Jax", "Poppy", "Warwick", "Viego"],
     runes: runesLong,
     skillOrder: "Skill order: Q > E > W (take R whenever available).",
     starter: ["Jungle item + Refillable", "Smite + Flash"],

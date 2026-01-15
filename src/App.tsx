@@ -269,6 +269,22 @@ export default function App() {
         {/* RIGHT: Recommendations */}
         <div className="card cardSticky cardGlow">
           <h2>Recommendations</h2>
+          
+          {/* Recommended bans */}
+          {rec.bans && rec.bans.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <div className="label" style={{ marginBottom: 8 }}>
+                RECOMMENDED BANS:
+              </div>
+              <div className="pillRow" style={{ marginTop: 8 }}>
+                {rec.bans.map((b) => (
+                  <div key={b} className="pill">
+                    {b}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {!shouldShowRecs ? (
           <div className="emptyState">
