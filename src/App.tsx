@@ -237,7 +237,8 @@ export default function App() {
               </div>
             )}
 
-            {scoutChamps.length > 0 && (
+            {/* Enemy notes: for Yi show here (under detected) */}
+            {selected !== "volibear" && scoutChamps.length > 0 && (
               <EnemyScout selected={selected} enemies={scoutChamps} />
             )}
 
@@ -254,6 +255,12 @@ export default function App() {
                 <div className="hint">
                   Tip: put the likely enemy top laner here (e.g., Teemo, Quinn, Gnar). This helps detect ranged/poke lanes.
                 </div>
+              </div>
+            )}
+            {/* Enemy notes: for Voli show AFTER the enemy top input */}
+            {selected === "volibear" && scoutChamps.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <EnemyScout selected={selected} enemies={scoutChamps} />
               </div>
             )}
           </div>
