@@ -42,7 +42,7 @@ export function CoachChat(props: {
     setLoading(true);
 
     try {
-      const r = await fetch("/api/coach.ts", {
+      const r = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: next.filter(m => m.role !== "assistant" || m.content), context }),
