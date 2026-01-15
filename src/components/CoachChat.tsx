@@ -1,15 +1,10 @@
-import { useMemo, useRef, useState } from "react";
-import type { DraftTags } from "../recommendations/tags";
+import { useRef, useState } from "react";
+import type { CoachContext } from "../coach/types";
 
 type Role = "user" | "assistant";
 type Msg = { role: Role; content: string };
 
-export function CoachChat(props: {
-  selected: "masteryi" | "volibear";
-  enemyNames: string[];
-  enemyTop?: string;
-  tags: DraftTags;
-}) {
+export function CoachChat({ context }: { context: CoachContext }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
@@ -22,22 +17,12 @@ export function CoachChat(props: {
   const [input, setInput] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  const context = useMemo(
-    () => ({
-      selected: props.selected,
-      enemyNames: props.enemyNames,
-      enemyTop: props.enemyTop,
-      tags: props.tags,
-    }),
-    [props.selected, props.enemyNames, props.enemyTop, props.tags]
-  );
-
   async function send() {
     const text = input.trim();
     if (!text || loading) return;
 
-    const next: Msg[] = [...messages, { role: "user", content: text }];
-    setMessages(next);
+    // optimistic UI
+    setMessages((m) => [...m, { role: "user", content: text }]);
     setInput("");
     setLoading(true);
 
@@ -45,11 +30,13 @@ export function CoachChat(props: {
       const r = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next.filter(m => m.role !== "assistant" || m.content), context }),
+        // send the latest user message + your injected context
+        body: JSON.stringify({ message: text, context }),
       });
 
       const data = await r.json();
-      const reply = typeof data?.text === "string" ? data.text : "No response—try again.";
+      const reply =
+        typeof data?.text === "string" ? data.text : "No response—try again.";
 
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
 
@@ -67,6 +54,11 @@ export function CoachChat(props: {
     }
   }
 
+  const title =
+    context.championKey === "volibear" ? "Volibear Top" : "Master Yi Jungle";
+
+  const enemyCount = context.enemyTeam?.length ?? 0;
+
   return (
     <>
       <button className="coachFab" type="button" onClick={() => setOpen(true)}>
@@ -80,11 +72,15 @@ export function CoachChat(props: {
               <div>
                 <div className="coachTitle">LoL Coach</div>
                 <div className="coachSub">
-                  {props.selected === "volibear" ? "Volibear Top" : "Master Yi Jungle"} •{" "}
-                  {props.enemyNames.length ? `${props.enemyNames.length} enemies` : "no enemy team yet"}
+                  {title} • {enemyCount ? `${enemyCount} enemies` : "no enemy team yet"}
+                  {context.enemyTop ? ` • top: ${context.enemyTop}` : ""}
                 </div>
               </div>
-              <button className="coachClose" type="button" onClick={() => setOpen(false)}>
+              <button
+                className="coachClose"
+                type="button"
+                onClick={() => setOpen(false)}
+              >
                 ×
               </button>
             </div>
@@ -112,7 +108,12 @@ export function CoachChat(props: {
                   if (e.key === "Enter") send();
                 }}
               />
-              <button className="coachSend" type="button" onClick={send} disabled={loading}>
+              <button
+                className="coachSend"
+                type="button"
+                onClick={send}
+                disabled={loading}
+              >
                 Send
               </button>
             </div>

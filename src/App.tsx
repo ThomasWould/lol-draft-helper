@@ -10,6 +10,7 @@ import { getMasterYiRec, type ChampRec } from "./recommendations/masterYi";
 import { getVolibearRec } from "./recommendations/volibear";
 import { EnemyScout } from "./components/EnemyScout";
 import { CoachChat } from "./components/CoachChat";
+import type { CoachContext } from "./coach/types";
 
 type ChampionKey = "masteryi" | "volibear";
 
@@ -112,8 +113,9 @@ export default function App() {
       if (!base.some((c) => c.id === top.id)) base.unshift(top);
     }
 
-  return base;
-}, [matched, selected, topMatched]);
+    return base;
+  }, [matched, selected, topMatched]);
+
 
   // tags + pills from your tag engine
   const tags = useMemo(() => {
@@ -132,6 +134,40 @@ export default function App() {
     ? getMasterYiRec(tags, enemyNamesNormalized)
     : getVolibearRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
 }, [selected, tags, enemyNamesNormalized, enemyTopNormalized]);
+
+  const coachContext: CoachContext = useMemo(() => {
+    const champMeta =
+      selected === "masteryi"
+        ? { label: "Master Yi", role: "Jungle" }
+        : { label: "Volibear", role: "Top" };
+
+    return {
+      championKey: selected,
+      championLabel: champMeta.label,
+      role: champMeta.role,
+
+      // Use DISPLAY names here (better for the coach to read)
+      enemyTeam: matched.map((c) => c.name),
+      enemyTop: enemyTopRaw.trim() || undefined,
+
+      detected: {
+        tanks: tags.counts.tanks ?? 0,
+        ccBurst: tags.counts.ccBurst ?? 0,
+        ap: tags.counts.ap ?? 0,
+        ad: tags.counts.ad ?? 0,
+        flex: tags.counts.flex ?? 0,
+        healing: tags.counts.healing ?? 0,
+        pills: tagPills,
+      },
+
+      recommendations: {
+        headlineLines: rec.headlineLines ?? [],
+        itemsOrdered: rec.itemsOrdered ?? [],
+        fightRule: rec.fightRule,
+      },
+    };
+  }, [selected, matched, enemyTopRaw, tags, tagPills, rec]);
+
 
   return (
     <div className="page">
@@ -375,12 +411,7 @@ export default function App() {
       <footer className="footer">
         <span className="muted small">Tip: bookmark this page so you can open it during champ select.</span>
       </footer>
-      <CoachChat
-        selected={selected}
-        enemyNames={enemyNamesNormalized}
-        enemyTop={selected === "volibear" ? enemyTopNormalized : undefined}
-        tags={tags}
-      />
+      <CoachChat context={coachContext} />
     </div>
   );
 }
