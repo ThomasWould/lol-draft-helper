@@ -229,22 +229,20 @@ export default function App() {
         </div>
 
         {/* RIGHT: Recommendations */}
-        <div
-          className={`card cardSticky cardGlow recCard ${
-            matched.length > 0 ? "recCard--show" : "recCard--hide"
-          }`}
-        >
+        {/* RIGHT: Recommendations */}
+        <div className="card cardSticky cardGlow">
+          <h2>Recommendations</h2>
+
           {matched.length === 0 ? (
-            <div className="recEmpty">
-              <h2 style={{ marginBottom: 6 }}>Recommendations</h2>
-              <p className="muted" style={{ margin: 0 }}>
-                Enter enemy champions to generate matchup advice.
-              </p>
+            <div className="emptyState">
+              <div className="emptyTitle">Enter enemy champions to generate advice</div>
+              <div className="emptySub">
+                Start typing 1–5 enemy champs on the left. We’ll auto-detect tanks, CC, AP/AD, and update
+                items/runes instantly.
+              </div>
             </div>
           ) : (
             <>
-              <h2>Recommendations</h2>
-
               {/* Tag pills */}
               {tagPills.length > 0 && (
                 <div className="pillRow" style={{ marginTop: 10 }}>
@@ -284,7 +282,6 @@ export default function App() {
                     <li key={`${it.name}-${idx}`} className="itemRow">
                       <span className="itemNum">{idx + 1}</span>
                       <span className="itemName">{it.name}</span>
-
                       {it.note &&
                         (it.note.includes("BUY HERE") ? (
                           <span className="buyHere">{it.note}</span>

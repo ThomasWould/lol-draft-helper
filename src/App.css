@@ -544,25 +544,3 @@ textarea:focus {
     margin-top: 6px;
   }
 }
-
-/* ---------- Recommendations fade in/out ---------- */
-.recCard {
-  transition: opacity 220ms ease, transform 220ms ease;
-  will-change: opacity, transform;
-}
-
-.recCard--hide {
-  opacity: 0;
-  transform: translateY(8px);
-  pointer-events: none;
-}
-
-.recCard--show {
-  opacity: 1;
-  transform: translateY(0px);
-  pointer-events: auto;
-}
-
-.recEmpty {
-  padding: 6px 2px;
-}
