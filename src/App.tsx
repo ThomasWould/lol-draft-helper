@@ -90,6 +90,9 @@ export default function App() {
   );
 
   const enemyTopNormalized = useMemo(() => normalizeLoose(enemyTopRaw), [enemyTopRaw]);
+  const hasEnemyTeam = matched.length > 0;
+  const hasEnemyTop = enemyTopNormalized.length > 0;
+  const shouldShowRecs = hasEnemyTeam || (selected === "volibear" && hasEnemyTop);
 
   // tags + pills from your tag engine
   const tags = useMemo(() => {
@@ -229,89 +232,89 @@ export default function App() {
         </div>
 
         {/* RIGHT: Recommendations */}
-        {/* RIGHT: Recommendations */}
         <div className="card cardSticky cardGlow">
           <h2>Recommendations</h2>
 
-          {matched.length === 0 ? (
-            <div className="emptyState">
-              <div className="emptyTitle">Enter enemy champions to generate advice</div>
-              <div className="emptySub">
-                Start typing 1–5 enemy champs on the left. We’ll auto-detect tanks, CC, AP/AD, and update
-                items/runes instantly.
-              </div>
+          {!shouldShowRecs ? (
+          <div className="emptyState">
+            <div className="emptyTitle">
+            {selected === "volibear" ? "Start typing enemy champions (or just enemy top)" : "Start typing enemy champions"}
             </div>
-          ) : (
-            <>
-              {/* Tag pills */}
-              {tagPills.length > 0 && (
-                <div className="pillRow" style={{ marginTop: 10 }}>
-                  {tagPills.map((p) => (
-                    <div key={p} className="pill">
-                      {p}
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="emptySub">
+              Add 1–5 champs on the left. We’ll auto-detect tanks, CC, AP/AD, healing, and update items/runes instantly.
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Tag pills */}
+            {tagPills.length > 0 && (
+              <div className="pillRow" style={{ marginTop: 10 }}>
+                {tagPills.map((p) => (
+                  <div key={p} className="pill">
+                    {p}
+                  </div>
+                ))}
+              </div>
+            )}
 
-              {/* Coach-note style headline lines */}
-              <div className="recLines">
-                {rec.headlineLines.map((line) => {
-                  const idx = line.indexOf(":");
-                  const key = idx !== -1 ? line.slice(0, idx) : "NOTE";
-                  const val = idx !== -1 ? line.slice(idx + 1).trim() : line;
-                  return (
-                    <div key={line} className="recLine">
-                      <div className="recKey">{key}</div>
-                      <div className="recVal">{val}</div>
-                    </div>
-                  );
-                })}
+            {/* Coach-note style headline lines */}
+            <div className="recLines">
+              {rec.headlineLines.map((line) => {
+                const idx = line.indexOf(":");
+                const key = idx !== -1 ? line.slice(0, idx) : "NOTE";
+                const val = idx !== -1 ? line.slice(idx + 1).trim() : line;
+                return (
+                  <div key={line} className="recLine">
+                    <div className="recKey">{key}</div>
+                    <div className="recVal">{val}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="divider" />
+
+            {/* Items in order */}
+            <div style={{ marginTop: 14 }}>
+              <div className="label" style={{ marginBottom: 8 }}>
+                ITEMS (IN ORDER):
               </div>
 
-              <div className="divider" />
+              <ul className="itemList">
+                {rec.itemsOrdered.map((it, idx) => (
+                  <li key={`${it.name}-${idx}`} className="itemRow">
+                    <span className="itemNum">{idx + 1}</span>
+                    <span className="itemName">{it.name}</span>
+                    {it.note &&
+                      (it.note.includes("BUY HERE") ? (
+                        <span className="buyHere">{it.note}</span>
+                      ) : (
+                        <span className="itemNote">{it.note}</span>
+                      ))}
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-              {/* Items in order */}
+            <div className="divider" />
+
+            {/* Fight rule */}
+            {rec.fightRule && (
               <div style={{ marginTop: 14 }}>
                 <div className="label" style={{ marginBottom: 8 }}>
-                  ITEMS (IN ORDER):
+                  FIGHT RULE:
                 </div>
-
-                <ul className="itemList">
-                  {rec.itemsOrdered.map((it, idx) => (
-                    <li key={`${it.name}-${idx}`} className="itemRow">
-                      <span className="itemNum">{idx + 1}</span>
-                      <span className="itemName">{it.name}</span>
-                      {it.note &&
-                        (it.note.includes("BUY HERE") ? (
-                          <span className="buyHere">{it.note}</span>
-                        ) : (
-                          <span className="itemNote">{it.note}</span>
-                        ))}
-                    </li>
-                  ))}
-                </ul>
+                <p className="note" style={{ marginTop: 0 }}>
+                  {rec.fightRule}
+                </p>
               </div>
+            )}
 
-              <div className="divider" />
-
-              {/* Fight rule */}
-              {rec.fightRule && (
-                <div style={{ marginTop: 14 }}>
-                  <div className="label" style={{ marginBottom: 8 }}>
-                    FIGHT RULE:
-                  </div>
-                  <p className="note" style={{ marginTop: 0 }}>
-                    {rec.fightRule}
-                  </p>
-                </div>
-              )}
-
-              <p className="muted small" style={{ marginTop: 10 }}>
-                (Next: add “key threats” callout + better matchup branching.)
-              </p>
-            </>
-          )}
+            <p className="muted small" style={{ marginTop: 10 }}>
+              (Next: add “key threats” callout + better matchup branching.)
+            </p>
+          </>
+        )}
         </div>
       </div>
       <footer className="footer">
