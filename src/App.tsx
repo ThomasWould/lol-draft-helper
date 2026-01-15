@@ -300,11 +300,13 @@ export default function App() {
             {/* Tag pills */}
             {tagPills.length > 0 && (
               <div className="pillRow" style={{ marginTop: 10 }}>
-                {tagPills.map((p) => (
-                  <div key={p} className="pill">
-                    {p}
-                  </div>
-                ))}
+                {tagPills
+                  .filter((p) => p !== "ranged top") // hide this pill
+                  .map((p) => (
+                    <div key={p} className="pill">
+                      {p}
+                    </div>
+                  ))}
               </div>
             )}
 
