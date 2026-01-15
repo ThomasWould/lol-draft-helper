@@ -56,6 +56,7 @@ const OVERRIDES: Record<string, Partial<ChampionTraits>> = {
   galio: { heavyCC: true, tanky: true },
 
   // ---------------- Damage type outliers / mixed ----------------
+  teemo: { damage: "AP" },
   kayle: { damage: "MIXED" },
   gwen: { damage: "AP" },
   mordekaiser: { damage: "AP" },

@@ -208,6 +208,7 @@ export default function App() {
                   tags.counts.ccBurst ? `${tags.counts.ccBurst} burst/CC` : null,
                   tags.counts.ap ? `${tags.counts.ap} AP` : null,
                   tags.counts.ad ? `${tags.counts.ad} AD` : null,
+                  tags.counts.flex ? `${tags.counts.flex} flex (AD/AP)` : null,
                   tags.counts.healing ? `${tags.counts.healing} healing` : null,
                   tags.rangedTop ? "ranged top (from top pick)" : null,
                 ]

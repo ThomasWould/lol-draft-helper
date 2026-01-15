@@ -15,6 +15,8 @@ export type DraftTags = {
     ap: number;
     ad: number;
     healing: number;
+    flex: number;
+    flexNames: string[];
   };
 };
 
@@ -39,6 +41,8 @@ export function getDraftTagsFromTraits(
   let ap = 0;
   let ad = 0;
   let healing = 0;
+  let flex = 0;
+  const flexNames: string[] = [];
 
   for (const e of enemyIds) {
     const t = traitsMap.get(e);
@@ -48,12 +52,14 @@ export function getDraftTagsFromTraits(
     if (t.heavyCC) ccBurst += 1;
     if (t.healing) healing += 1;
 
+    const flexNames: string[] = [];
     if (t.damage === "AP") ap += 1;
     else if (t.damage === "AD") ad += 1;
     else {
-      // MIXED: count as half and half (or choose one side)
-      ap += 0.5;
-      ad += 0.5;
+      flex += 1;
+      // store name if you want a nicer display
+      // note: `e` is normalized, but we can still show it nicely later
+      flexNames.push(e);
     }
   }
 
@@ -78,6 +84,8 @@ export function getDraftTagsFromTraits(
       ap: Math.round(ap),
       ad: Math.round(ad),
       healing: Math.round(healing),
+      flex: Math.round(flex),
+      flexNames,
     },
   };
 }
