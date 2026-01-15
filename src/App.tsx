@@ -85,6 +85,13 @@ export default function App() {
     [tokens, championList]
   );
 
+  // NEW: resolve enemy top textbox into a champion (for Voli-only input)
+  const topTokens = useMemo(() => splitTokens(enemyTopRaw), [enemyTopRaw]);
+  const { matched: topMatched } = useMemo(
+    () => resolveChampions(topTokens, championList),
+    [topTokens, championList]
+  );
+
   const enemyNamesNormalized = useMemo(
     () => matched.map((c) => normalizeLoose(c.name)),
     [matched]
@@ -94,6 +101,18 @@ export default function App() {
   const hasEnemyTeam = matched.length > 0;
   const hasEnemyTop = enemyTopNormalized.length > 0;
   const shouldShowRecs = hasEnemyTeam || (selected === "volibear" && hasEnemyTop);
+
+  // NEW: Scout targets = enemy team + (if Voli) enemy top champ even if no team entered
+  const scoutChamps = useMemo(() => {
+    const base = [...matched];
+
+    if (selected === "volibear" && topMatched.length > 0) {
+      const top = topMatched[0];
+      if (!base.some((c) => c.id === top.id)) base.unshift(top);
+    }
+
+  return base;
+}, [matched, selected, topMatched]);
 
   // tags + pills from your tag engine
   const tags = useMemo(() => {
@@ -218,8 +237,8 @@ export default function App() {
               </div>
             )}
 
-            {matched.length > 0 && (
-              <EnemyScout selected={selected} enemies={matched} />
+            {scoutChamps.length > 0 && (
+              <EnemyScout selected={selected} enemies={scoutChamps} />
             )}
 
             {/* Optional enemy top (only for Volibear) */}
