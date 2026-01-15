@@ -150,13 +150,23 @@ h2 {
   }
 }
 
-/* Ultrawide: widen the right card so space feels intentional */
+/* Ultrawide: widen the whole layout */
 @media (min-width: 1400px) {
   .page {
-    width: min(1400px, 100%);
+    width: min(1600px, 100%);
   }
   .grid {
-    grid-template-columns: minmax(340px, 420px) minmax(720px, 980px);
+    grid-template-columns: minmax(360px, 440px) minmax(820px, 1120px);
+  }
+}
+
+/* Extra-wide: let the recommendations card breathe even more */
+@media (min-width: 1700px) {
+  .page {
+    width: min(1800px, 100%);
+  }
+  .grid {
+    grid-template-columns: minmax(380px, 460px) minmax(920px, 1280px);
   }
 }
 
