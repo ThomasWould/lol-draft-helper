@@ -229,90 +229,93 @@ export default function App() {
         </div>
 
         {/* RIGHT: Recommendations */}
-        {/* RIGHT: Recommendations */}
-<div className="card cardSticky cardGlow">
-  <h2>Recommendations</h2>
-
-  {matched.length === 0 ? (
-    <div className="emptyState">
-      <div className="emptyTitle">Enter enemy champions to generate advice</div>
-      <div className="emptySub">
-        Start typing 1–5 enemy champs on the left. We’ll auto-detect tanks, CC, AP/AD, and update
-        items/runes instantly.
-      </div>
-    </div>
-  ) : (
-    <>
-      {/* Tag pills */}
-      {tagPills.length > 0 && (
-        <div className="pillRow" style={{ marginTop: 10 }}>
-          {tagPills.map((p) => (
-            <div key={p} className="pill">
-              {p}
+        <div
+          className={`card cardSticky cardGlow recCard ${
+            matched.length > 0 ? "recCard--show" : "recCard--hide"
+          }`}
+        >
+          {matched.length === 0 ? (
+            <div className="recEmpty">
+              <h2 style={{ marginBottom: 6 }}>Recommendations</h2>
+              <p className="muted" style={{ margin: 0 }}>
+                Enter enemy champions to generate matchup advice.
+              </p>
             </div>
-          ))}
+          ) : (
+            <>
+              <h2>Recommendations</h2>
+
+              {/* Tag pills */}
+              {tagPills.length > 0 && (
+                <div className="pillRow" style={{ marginTop: 10 }}>
+                  {tagPills.map((p) => (
+                    <div key={p} className="pill">
+                      {p}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Coach-note style headline lines */}
+              <div className="recLines">
+                {rec.headlineLines.map((line) => {
+                  const idx = line.indexOf(":");
+                  const key = idx !== -1 ? line.slice(0, idx) : "NOTE";
+                  const val = idx !== -1 ? line.slice(idx + 1).trim() : line;
+                  return (
+                    <div key={line} className="recLine">
+                      <div className="recKey">{key}</div>
+                      <div className="recVal">{val}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="divider" />
+
+              {/* Items in order */}
+              <div style={{ marginTop: 14 }}>
+                <div className="label" style={{ marginBottom: 8 }}>
+                  ITEMS (IN ORDER):
+                </div>
+
+                <ul className="itemList">
+                  {rec.itemsOrdered.map((it, idx) => (
+                    <li key={`${it.name}-${idx}`} className="itemRow">
+                      <span className="itemNum">{idx + 1}</span>
+                      <span className="itemName">{it.name}</span>
+
+                      {it.note &&
+                        (it.note.includes("BUY HERE") ? (
+                          <span className="buyHere">{it.note}</span>
+                        ) : (
+                          <span className="itemNote">{it.note}</span>
+                        ))}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="divider" />
+
+              {/* Fight rule */}
+              {rec.fightRule && (
+                <div style={{ marginTop: 14 }}>
+                  <div className="label" style={{ marginBottom: 8 }}>
+                    FIGHT RULE:
+                  </div>
+                  <p className="note" style={{ marginTop: 0 }}>
+                    {rec.fightRule}
+                  </p>
+                </div>
+              )}
+
+              <p className="muted small" style={{ marginTop: 10 }}>
+                (Next: add “key threats” callout + better matchup branching.)
+              </p>
+            </>
+          )}
         </div>
-      )}
-
-      {/* Coach-note style headline lines */}
-      <div className="recLines">
-        {rec.headlineLines.map((line) => {
-          const idx = line.indexOf(":");
-          const key = idx !== -1 ? line.slice(0, idx) : "NOTE";
-          const val = idx !== -1 ? line.slice(idx + 1).trim() : line;
-          return (
-            <div key={line} className="recLine">
-              <div className="recKey">{key}</div>
-              <div className="recVal">{val}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="divider" />
-
-      {/* Items in order */}
-      <div style={{ marginTop: 14 }}>
-        <div className="label" style={{ marginBottom: 8 }}>
-          ITEMS (IN ORDER):
-        </div>
-
-        <ul className="itemList">
-          {rec.itemsOrdered.map((it, idx) => (
-            <li key={`${it.name}-${idx}`} className="itemRow">
-              <span className="itemNum">{idx + 1}</span>
-              <span className="itemName">{it.name}</span>
-              {it.note &&
-                (it.note.includes("BUY HERE") ? (
-                  <span className="buyHere">{it.note}</span>
-                ) : (
-                  <span className="itemNote">{it.note}</span>
-                ))}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="divider" />
-
-      {/* Fight rule */}
-      {rec.fightRule && (
-        <div style={{ marginTop: 14 }}>
-          <div className="label" style={{ marginBottom: 8 }}>
-            FIGHT RULE:
-          </div>
-          <p className="note" style={{ marginTop: 0 }}>
-            {rec.fightRule}
-          </p>
-        </div>
-      )}
-
-      <p className="muted small" style={{ marginTop: 10 }}>
-        (Next: add “key threats” callout + better matchup branching.)
-      </p>
-          </>
-        )}
-      </div>
       </div>
       <footer className="footer">
         <span className="muted small">Tip: bookmark this page so you can open it during champ select.</span>
