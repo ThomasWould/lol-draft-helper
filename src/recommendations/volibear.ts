@@ -20,6 +20,22 @@ function pickBoots(opts: {
   return "Ionian Boots of Lucidity";
 }
 
+function pickStart(opts: {
+  topIsRanged: boolean;
+  topIsAP: boolean;
+  topIsAutoAD: boolean;
+  heavyCCBurst: boolean;
+}) {
+  // Default (most common / best general): Ring
+  // Shield: only if you’re going to get poked out / bled down by range
+  // Blade: only if you’re hard committing to early melee scrap + snowball
+
+  if (opts.topIsRanged) return "Doran’s Shield";
+  if (opts.heavyCCBurst && opts.topIsAutoAD) return "Doran’s Shield"; // safety into nasty all-in + CC
+  if (!opts.topIsAP && opts.topIsAutoAD) return "Doran’s Blade"; // melee AA duel lanes (Trynd/Jax/Irelia-ish)
+  return "Doran’s Ring";
+}
+
 export function getVolibearRec(
   tags: DraftTags,
   enemies: string[],
@@ -49,9 +65,19 @@ export function getVolibearRec(
     ? "RUNES: Grasp + Second Wind (poke lane stability)"
     : "RUNES: PTA (kill pressure) or Grasp (matchup dependent)";
 
-  const startLine = topIsRanged || tags.rangedTop
+  const startItem = pickStart({
+  topIsRanged: topIsRanged || tags.rangedTop,
+  topIsAP,
+  topIsAutoAD,
+  heavyCCBurst: tags.heavyCCBurst,
+});
+
+const startLine =
+  startItem === "Doran’s Shield"
     ? "START: Doran’s Shield (don’t bleed out to poke)"
-    : "START: Doran’s Blade (stronger all-in threat)";
+    : startItem === "Doran’s Blade"
+      ? "START: Doran’s Blade (melee all-in pressure)"
+      : "START: Doran’s Ring (most common — mana + lane control)";
 
   // Tear is extremely common in the “haste/tank” build path
   const tearLine =
