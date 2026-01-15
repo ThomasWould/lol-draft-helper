@@ -309,9 +309,10 @@ export default function App() {
                 <div className="label" style={{ marginBottom: 8 }}>
                   FIGHT RULE:
                 </div>
-                <p className="note" style={{ marginTop: 0 }}>
-                  {rec.fightRule}
-                </p>
+
+                <div className="fightRuleBox">
+                  <p className="fightRuleText">{rec.fightRule}</p>
+                </div>
               </div>
             )}
 
