@@ -73,6 +73,7 @@ body::before {
   justify-content: flex-start; /* was space-between */
   gap: 14px;
   margin: 0 0 14px;
+  margin-bottom: 18px;
   padding: 10px 2px 6px;
 }
 
@@ -85,6 +86,7 @@ body::before {
 .headerLeft .link {
   padding: 8px 10px;
   border-radius: 12px;
+  margin-bottom: 14px;
 }
 
 /* give the subtitle space so the GitHub pill never touches it */
