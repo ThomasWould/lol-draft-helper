@@ -92,6 +92,13 @@ body::before {
   margin: 8px 0 12px; /* bottom margin added */
 }
 
+.headerTip{
+  color: var(--muted2);
+  font-size: 12px;
+  margin-top: 10px;
+  margin-bottom: 10px; /* space before GitHub pill */
+}
+
 h1 {
   margin: 0;
   font-size: clamp(28px, 4vw, 36px);
