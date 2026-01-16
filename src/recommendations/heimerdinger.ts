@@ -6,6 +6,15 @@ function hasAny(enemies: string[], keys: string[]) {
   return enemies.some((e) => keys.some((k) => e.includes(k)));
 }
 
+function norm(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+const TOP_RANGED = ["teemo", "quinn", "kennen", "jayce", "gnar", "vayne", "akshan"];
+const TOP_DIVERS = ["irelia", "camille", "jax", "riven", "renekton", "olaf", "tryndamere", "sett", "darius", "yasuo", "yone"];
+const TOP_SCALING = ["kayle", "nasus", "gangplank", "ornn", "sion", "mundo", "ksante", "vladimir"];
+
+
 function pickStart(tags: DraftTags, enemyTop?: string) {
   const top = (enemyTop || "").trim();
   const pokeTop = ["teemo", "quinn", "kennen", "jayce", "gnar", "vayne"];
@@ -22,6 +31,11 @@ export function getHeimerdingerRec(
   // More “most common” rune line for top Heimer
   const runeLine =
     "RUNES: Summon Aery or Arcane Comet — Manaflow + Transcendence; Scorch into melee";
+  
+  const top = norm(enemyTop || "");
+  const topIsRanged = !!top && TOP_RANGED.some((k) => top.includes(k));
+  const topIsDiver = !!top && TOP_DIVERS.some((k) => top.includes(k));
+  const topIsScaling = !!top && TOP_SCALING.some((k) => top.includes(k));
 
   const start = pickStart(tags, enemyTop);
   const startLine =
@@ -31,6 +45,35 @@ export function getHeimerdingerRec(
 
   const laneRule =
     "LANE RULE: Turrets down before trades → hold E to punish engage → slow push + crash with turret setup";
+
+  const waveTips = {
+    title: topIsDiver ? "Anti-dive lane state" : topIsScaling ? "Perma-deny plan" : "Turret-nest tempo",
+    bullets: [
+      ...(topIsDiver
+        ? [
+            "Keep wave on your side (short lane) so dives are awkward; don’t perma-shove without vision.",
+            "Build a 2-turret nest slightly behind your caster line; hold E for their commit (stun = turn).",
+            "When you do shove: crash a big wave → ward → reset; don’t sit past river with no setup.",
+          ]
+        : topIsRanged
+          ? [
+              "Slow push behind turrets; don’t take free poke just to auto the wave.",
+              "Crash on cannon wave for a safe reset/ward timing (turrets help you crash reliably).",
+              "If you get chunked: stop shoving and let it bounce back—best fights happen when they walk into your setup.",
+            ]
+          : topIsScaling
+            ? [
+                "Slow push → crash big → freeze the bounce on your side to deny (they can’t farm safely into turrets).",
+                "Punish last-hits with W poke; protect turret health so the lane stays ‘owned.’",
+                "If ahead: stack waves and take plates—your setup makes plate trades favorable.",
+              ]
+            : [
+                "Default: slow push with turrets → crash → take a clean reset/ward timing.",
+                "Don’t randomly auto the wave—control it so fights happen where turrets already exist.",
+                "If jungler is topside: stack a wave and threaten R+Q zone to win the crash/plates.",
+              ]),
+    ],
+  };
 
   // Fix assassin detection: normalized enemies include “khazix”
   const needsZhonyas =
@@ -78,6 +121,7 @@ export function getHeimerdingerRec(
   return {
     // 4 headline lines like Yi/Voli
     headlineLines: [runeLine, startLine, stasisLine, laneRule],
+    waveTips,
     itemsOrdered: items.slice(0, 6),
     fightRule,
     bans: ["Irelia", "Yasuo", "Nasus", "Syndra", "Olaf"],

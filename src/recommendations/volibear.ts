@@ -48,11 +48,17 @@ export function getVolibearRec(
   const TOP_AP = ["teemo", "kennen", "mordekaiser", "gwen", "rumble", "vladimir", "cassiopeia"];
   const TOP_HEALING = ["aatrox", "fiora", "warwick", "darius", "vladimir", "illaoi"];
   const TOP_AUTO_AD = ["vayne", "quinn", "gnar", "tryndamere", "jax", "irelia", "yasuo", "yone"];
+  const TOP_ALLIN = ["darius", "olaf", "sett", "renekton", "trundle", "mordekaiser", "illaoi", "warwick"];
+  const TOP_SCALING = ["kayle", "nasus", "gangplank", "vladimir", "ksante", "ornn", "sion", "mundo"];
+
 
   const topIsRanged = !!top && TOP_RANGED.some((k) => top.includes(k));
   const topIsAP = !!top && TOP_AP.some((k) => top.includes(k));
   const topIsHealing = !!top && TOP_HEALING.some((k) => top.includes(k));
   const topIsAutoAD = !!top && TOP_AUTO_AD.some((k) => top.includes(k));
+  const topIsAllIn = !!top && TOP_ALLIN.some((k) => top.includes(k));
+  const topIsScaling = !!top && TOP_SCALING.some((k) => top.includes(k));
+
 
   // Enemy team threat hints (basic but practical)
   const CRIT_THREATS = ["jinx", "caitlyn", "tristana", "tryndamere", "yasuo", "yone", "aphelios"];
@@ -96,6 +102,42 @@ const startLine =
     topIsRanged || tags.rangedTop
       ? "LANE RULE: Stay healthy → let wave come → punish cooldowns → all-in windows after 6"
       : "LANE RULE: Short trades early → stack W mark → crash wave → look for dive window with R";
+
+    const waveTips = {
+    title:
+      topIsRanged || tags.rangedTop
+        ? "Let it push → bounce → punish"
+        : topIsAllIn
+          ? "Keep wave short lane early"
+          : topIsScaling
+            ? "Bounce into freeze to deny"
+            : "Standard Voli tempo",
+    bullets: [
+      ...(topIsRanged || tags.rangedTop
+        ? [
+            "Levels 1–3: last-hit only; let wave come to you so you don’t eat free poke in a long lane.",
+            "When it crashes: trim the bounce and look to freeze near tower (forces them to overextend).",
+            "Hard shove only to crash a cannon wave → reset/ward → return to a safer lane state.",
+          ]
+        : topIsAllIn
+          ? [
+              "Early: keep wave on your side (short lane) so you don’t get run down.",
+              "Thin stacked waves—don’t fight into 2–3 waves (minion damage loses trades).",
+              "Crash cannon wave when you need a reset; otherwise hold freeze and punish oversteps with Q+E zone.",
+            ]
+          : topIsScaling
+            ? [
+                "Slow push 1–2 waves → crash big → let it bounce back (sets up your freeze).",
+                "Freeze near tower to deny XP/CS; ping jungle when they must walk up to break it.",
+                "After 6: stack a wave to threaten dive/plate windows with R on the crash.",
+              ]
+            : [
+                "Default: short trades → build a slow push → crash to get a clean reset/ward timing.",
+                "Avoid perma-shoving past river without vision; keep wave controllable.",
+                "After 6: stack waves to create dive/plate windows, or freeze to deny and force mistakes.",
+              ]),
+    ],
+  };
 
   // ---- Core 6 Build Logic (matchup + comp) ----
   //
@@ -159,6 +201,7 @@ const startLine =
 
   return {
     headlineLines: [runesLine, startLine, tearLine, laneRule],
+    waveTips,
     itemsOrdered: core6,
     fightRule,
     bans: ["Teemo", "Urgot", "Dr. Mundo", "Kennen", "Vayne"],

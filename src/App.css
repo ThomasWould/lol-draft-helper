@@ -561,6 +561,47 @@ textarea:focus {
   opacity: 0.92;
 }
 
+/* --- Wave Management block (top champs) --- */
+.waveBox{
+  margin-top: 12px;
+  padding: 12px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+.waveHeader{
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.waveKey{
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 12px;
+  opacity: 0.90;
+  white-space: nowrap;
+}
+
+.waveTitle{
+  opacity: 0.92;
+  font-weight: 700;
+}
+
+.waveList{
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: rgba(255,255,255,0.82);
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.waveList li{
+  margin: 5px 0;
+}
+
 /* Stack these rows on small screens for readability */
 @media (max-width: 560px) {
   .recLine {

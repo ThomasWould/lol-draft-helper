@@ -402,6 +402,20 @@ export default function App() {
                     </div>
                   );
                 })}
+                
+                {isTopPick(selected) && rec.waveTips && (
+                  <div className="waveBox">
+                    <div className="waveHeader">
+                      <div className="waveKey">WAVE</div>
+                      <div className="waveTitle">{rec.waveTips.title}</div>
+                    </div>
+                    <ul className="waveList">
+                      {rec.waveTips.bullets.map((b) => (
+                        <li key={b}>{b}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               <div className="divider" />

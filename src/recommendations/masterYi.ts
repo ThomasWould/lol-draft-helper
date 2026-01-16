@@ -12,6 +12,12 @@ export type ChampRec = {
   fightRule?: string;
   bans?: string[];
 
+  // NEW: wave tips (only used by top champs)
+  waveTips?: {
+    title: string;
+    bullets: string[];
+  };
+
   // (kept for later expansion / optional collapsible details)
   runes: string[];
   skillOrder: string;
