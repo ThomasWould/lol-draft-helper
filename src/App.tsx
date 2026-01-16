@@ -281,19 +281,40 @@ export default function App() {
             {matched.length > 0 && (
               <div className="hint" style={{ marginTop: 10 }}>
                 <b>Detected:</b>{" "}
-                {[
-                  tags.counts.tanks ? `${tags.counts.tanks} tank${tags.counts.tanks === 1 ? "" : "s"}` : null,
-                  tags.counts.ccBurst ? `${tags.counts.ccBurst} burst/CC` : null,
-                  tags.counts.ap ? `${tags.counts.ap} AP` : null,
-                  tags.counts.ad ? `${tags.counts.ad} AD` : null,
-                  tags.counts.flex ? `${tags.counts.flex} flex (AD/AP)` : null,
-                  tags.counts.healing ? `${tags.counts.healing} healing` : null,
-                  tags.rangedTop ? "ranged top (from top pick)" : null,
-                ]
-                  .filter(Boolean)
-                  .join(" • ")}
+                <span className="detRow">
+                  {tags.counts.tanks ? (
+                    <span className="detTag detTank">
+                      {tags.counts.tanks} tank{tags.counts.tanks === 1 ? "" : "s"}
+                    </span>
+                  ) : null}
+
+                  {tags.counts.ccBurst ? (
+                    <span className="detTag detCC">{tags.counts.ccBurst} burst/CC</span>
+                  ) : null}
+
+                  {tags.counts.ap ? (
+                    <span className="detTag detAP">{tags.counts.ap} AP</span>
+                  ) : null}
+
+                  {tags.counts.ad ? (
+                    <span className="detTag detAD">{tags.counts.ad} AD</span>
+                  ) : null}
+
+                  {tags.counts.flex ? (
+                    <span className="detTag detFlex">{tags.counts.flex} flex (AD/AP)</span>
+                  ) : null}
+
+                  {tags.counts.healing ? (
+                    <span className="detTag detHeal">{tags.counts.healing} healing</span>
+                  ) : null}
+
+                  {tags.rangedTop ? (
+                    <span className="detTag detRanged">ranged top</span>
+                  ) : null}
+                </span>
               </div>
             )}
+
 
             {/* ✅ NEW: Jungle champs show scout here */}
             {!isTopPick(selected) && scoutChamps.length > 0 && (
