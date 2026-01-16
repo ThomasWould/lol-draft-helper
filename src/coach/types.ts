@@ -1,10 +1,10 @@
 export type CoachContext = {
-  championKey: "masteryi" | "volibear";
-  championLabel: string; // "Master Yi" | "Volibear"
-  role: string;          // "Jungle" | "Top"
-
-  enemyTeam: string[];   // ["Kayle", "Lux", ...] from matched champs
-  enemyTop?: string;     // from enemyTopRaw (optional)
+  championKey: "masteryi" | "belveth" | "volibear" | "heimerdinger";
+  championLabel: "Master Yi" | "Bel'Veth" | "Volibear" | "Heimerdinger";
+  role: "Jungle" | "Top";
+  // rest same...
+  enemyTeam: string[];
+  enemyTop?: string;
 
   detected: {
     tanks: number;
@@ -13,12 +13,13 @@ export type CoachContext = {
     ad: number;
     flex: number;
     healing: number;
-    pills: string[];     // tagsToPills(tags)
+    pills: string[];
   };
 
   recommendations: {
-    headlineLines: string[]; // your recLines (RUNES/START/etc)
+    headlineLines: string[];
     itemsOrdered: { name: string; note?: string }[];
     fightRule?: string;
   };
 };
+

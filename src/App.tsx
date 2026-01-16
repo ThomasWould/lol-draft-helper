@@ -8,16 +8,37 @@ import type { DDragonChampion } from "./api/ddragon";
 import { getDraftTagsFromTraits, tagsToPills } from "./recommendations/tags";
 import { getMasterYiRec, type ChampRec } from "./recommendations/masterYi";
 import { getVolibearRec } from "./recommendations/volibear";
+
+// ✅ NEW: add these imports
+import { getBelvethRec } from "./recommendations/belveth";
+import { getHeimerdingerRec } from "./recommendations/heimerdinger";
+
 import { EnemyScout } from "./components/EnemyScout";
 import { CoachChat } from "./components/CoachChat";
 import type { CoachContext } from "./coach/types";
 
-type ChampionKey = "masteryi" | "volibear";
+// ✅ NEW: expand ChampionKey
+type ChampionKey = "masteryi" | "belveth" | "volibear" | "heimerdinger";
 
+// ✅ NEW: add champs to CHAMPIONS
 const CHAMPIONS: { key: ChampionKey; label: string; role: string }[] = [
   { key: "masteryi", label: "Master Yi", role: "Jungle" },
+  { key: "belveth", label: "Bel'Veth", role: "Jungle" },
   { key: "volibear", label: "Volibear", role: "Top" },
+  { key: "heimerdinger", label: "Heimerdinger", role: "Top" },
 ];
+
+const CHAMP_META = {
+  masteryi: { label: "Master Yi", role: "Jungle" },
+  belveth: { label: "Bel'Veth", role: "Jungle" },
+  volibear: { label: "Volibear", role: "Top" },
+  heimerdinger: { label: "Heimerdinger", role: "Top" },
+} as const;
+
+// ✅ NEW helper: top picks = Voli + Heimer
+function isTopPick(k: ChampionKey) {
+  return k === "volibear" || k === "heimerdinger";
+}
 
 function normalizeLoose(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -77,7 +98,7 @@ function removeEnemy(champName: string, raw: string) {
 export default function App() {
   const [selected, setSelected] = useState<ChampionKey>("masteryi");
   const [enemyRaw, setEnemyRaw] = useState("");
-  const [enemyTopRaw, setEnemyTopRaw] = useState(""); // optional for Voli
+  const [enemyTopRaw, setEnemyTopRaw] = useState(""); // optional for TOP champs
 
   const { loading, error, version, championList } = useChampionData();
 
@@ -87,7 +108,7 @@ export default function App() {
     [tokens, championList]
   );
 
-  // NEW: resolve enemy top textbox into a champion (for Voli-only input)
+  // resolve enemy top textbox into a champion (for Top picks)
   const topTokens = useMemo(() => splitTokens(enemyTopRaw), [enemyTopRaw]);
   const { matched: topMatched } = useMemo(
     () => resolveChampions(topTokens, championList),
@@ -102,20 +123,21 @@ export default function App() {
   const enemyTopNormalized = useMemo(() => normalizeLoose(enemyTopRaw), [enemyTopRaw]);
   const hasEnemyTeam = matched.length > 0;
   const hasEnemyTop = enemyTopNormalized.length > 0;
-  const shouldShowRecs = hasEnemyTeam || (selected === "volibear" && hasEnemyTop);
 
-  // NEW: Scout targets = enemy team + (if Voli) enemy top champ even if no team entered
+  // ✅ NEW: show recs if team exists OR top input exists for top picks
+  const shouldShowRecs = hasEnemyTeam || (isTopPick(selected) && hasEnemyTop);
+
+  // ✅ NEW: Scout targets = enemy team + (if TOP pick) enemy top champ even if no team entered
   const scoutChamps = useMemo(() => {
     const base = [...matched];
 
-    if (selected === "volibear" && topMatched.length > 0) {
+    if (isTopPick(selected) && topMatched.length > 0) {
       const top = topMatched[0];
       if (!base.some((c) => c.id === top.id)) base.unshift(top);
     }
 
     return base;
   }, [matched, selected, topMatched]);
-
 
   // tags + pills from your tag engine
   const tags = useMemo(() => {
@@ -128,26 +150,27 @@ export default function App() {
 
   const tagPills = useMemo(() => tagsToPills(tags), [tags]);
 
-  // unified recommendations
+  // ✅ NEW: unified recommendations (4 champs)
   const rec: ChampRec = useMemo(() => {
-  return selected === "masteryi"
-    ? getMasterYiRec(tags, enemyNamesNormalized)
-    : getVolibearRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
-}, [selected, tags, enemyNamesNormalized, enemyTopNormalized]);
+    if (selected === "masteryi") return getMasterYiRec(tags, enemyNamesNormalized);
+    if (selected === "belveth") return getBelvethRec(tags, enemyNamesNormalized);
+    if (selected === "volibear")
+      return getVolibearRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
+    return getHeimerdingerRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
+  }, [selected, tags, enemyNamesNormalized, enemyTopNormalized]);
 
   const coachContext: CoachContext = useMemo(() => {
-    const champMeta =
-      selected === "masteryi"
-        ? { label: "Master Yi", role: "Jungle" }
-        : { label: "Volibear", role: "Top" };
+    // ✅ NEW: champMeta for 4 champs
+    const champMeta = CHAMP_META[selected];
 
     return {
       championKey: selected,
       championLabel: champMeta.label,
       role: champMeta.role,
 
-      // Use DISPLAY names here (better for the coach to read)
       enemyTeam: matched.map((c) => c.name),
+
+      // keep top optional; for junglers it can still show (harmless)
       enemyTop: enemyTopRaw.trim() || undefined,
 
       detected: {
@@ -168,14 +191,15 @@ export default function App() {
     };
   }, [selected, matched, enemyTopRaw, tags, tagPills, rec]);
 
-
   return (
     <div className="page">
       <header className="header">
         <div>
           <h1>LoL Draft Helper</h1>
+          {/* ✅ NEW: update subtitle */}
           <p className="sub">
-            Fast draft notes for <b>Master Yi (Jungle)</b> and <b>Volibear (Top)</b>.
+            Fast draft notes for <b>Master Yi / Bel'Veth (Jungle)</b> and{" "}
+            <b>Volibear / Heimerdinger (Top)</b>.
           </p>
         </div>
         <a
@@ -188,7 +212,6 @@ export default function App() {
         </a>
       </header>
 
-      {/* ✅ 2-column grid on desktop, stacked on mobile */}
       <div className="grid">
         {/* LEFT: Inputs */}
         <div className="card inputsCard">
@@ -225,7 +248,6 @@ export default function App() {
               Parsed: {tokens.length ? tokens.join(", ") : <span className="muted">none</span>}
             </div>
 
-            {/* Icon chips (click to remove) */}
             {version && matched.length > 0 && (
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
                 {matched.map((c) => (
@@ -256,7 +278,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Detected summary (from tags.counts) */}
             {matched.length > 0 && (
               <div className="hint" style={{ marginTop: 10 }}>
                 <b>Detected:</b>{" "}
@@ -274,15 +295,15 @@ export default function App() {
               </div>
             )}
 
-            {/* Enemy notes: for Yi show here (under detected) */}
-            {selected !== "volibear" && scoutChamps.length > 0 && (
+            {/* ✅ NEW: Jungle champs show scout here */}
+            {!isTopPick(selected) && scoutChamps.length > 0 && (
               <EnemyScout selected={selected} enemies={scoutChamps} />
             )}
 
-            {/* Optional enemy top (only for Volibear) */}
-            {selected === "volibear" && (
+            {/* ✅ NEW: Optional enemy top (for TOP champs: Voli + Heimer) */}
+            {isTopPick(selected) && (
               <div style={{ marginTop: 14 }}>
-                <label className="label">Enemy top (optional — improves Volibear advice)</label>
+                <label className="label">Enemy top (optional — improves top-lane advice)</label>
                 <ChampionTextarea
                   value={enemyTopRaw}
                   onChange={setEnemyTopRaw}
@@ -290,12 +311,13 @@ export default function App() {
                   disabled={loading || !!error}
                 />
                 <div className="hint">
-                  Tip: put the likely enemy top laner here (e.g., Teemo, Quinn, Gnar). This helps detect ranged/poke lanes.
+                  Tip: put the likely enemy top laner here (e.g., Teemo, Quinn, Gnar). Helps matchup branching.
                 </div>
               </div>
             )}
-            {/* Enemy notes: for Voli show AFTER the enemy top input */}
-            {selected === "volibear" && scoutChamps.length > 0 && (
+
+            {/* ✅ NEW: Top champs show scout AFTER top input */}
+            {isTopPick(selected) && scoutChamps.length > 0 && (
               <div style={{ marginTop: 12 }}>
                 <EnemyScout selected={selected} enemies={scoutChamps} />
               </div>
@@ -306,8 +328,7 @@ export default function App() {
         {/* RIGHT: Recommendations */}
         <div className="card cardSticky cardGlow">
           <h2>Recommendations</h2>
-          
-          {/* Recommended bans */}
+
           {rec.bans && rec.bans.length > 0 && (
             <div style={{ marginTop: 10 }}>
               <div className="label" style={{ marginBottom: 8 }}>
@@ -324,93 +345,93 @@ export default function App() {
           )}
 
           {!shouldShowRecs ? (
-          <div className="emptyState">
-            <div className="emptyTitle">
-            {selected === "volibear" ? "Start typing enemy champions (or just enemy top)" : "Start typing enemy champions"}
+            <div className="emptyState">
+              <div className="emptyTitle">
+                {isTopPick(selected)
+                  ? "Start typing enemy champions (or just enemy top)"
+                  : "Start typing enemy champions"}
+              </div>
+              <div className="emptySub">
+                Add 1–5 champs on the left. We’ll auto-detect tanks, CC, AP/AD, healing, and update items/runes instantly.
+              </div>
             </div>
-            <div className="emptySub">
-              Add 1–5 champs on the left. We’ll auto-detect tanks, CC, AP/AD, healing, and update items/runes instantly.
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Tag pills */}
-            {tagPills.length > 0 && (
-              <div className="pillRow" style={{ marginTop: 10 }}>
-                {tagPills
-                  .filter((p) => p !== "ranged top") // hide this pill
-                  .map((p) => (
-                    <div key={p} className="pill">
-                      {p}
+          ) : (
+            <>
+              {tagPills.length > 0 && (
+                <div className="pillRow" style={{ marginTop: 10 }}>
+                  {tagPills
+                    .filter((p) => p !== "ranged top")
+                    .map((p) => (
+                      <div key={p} className="pill">
+                        {p}
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              <div className="recLines">
+                {rec.headlineLines.map((line) => {
+                  const idx = line.indexOf(":");
+                  const key = idx !== -1 ? line.slice(0, idx) : "NOTE";
+                  const val = idx !== -1 ? line.slice(idx + 1).trim() : line;
+                  return (
+                    <div key={line} className="recLine">
+                      <div className="recKey">{key}</div>
+                      <div className="recVal">{val}</div>
                     </div>
-                  ))}
-              </div>
-            )}
-
-            {/* Coach-note style headline lines */}
-            <div className="recLines">
-              {rec.headlineLines.map((line) => {
-                const idx = line.indexOf(":");
-                const key = idx !== -1 ? line.slice(0, idx) : "NOTE";
-                const val = idx !== -1 ? line.slice(idx + 1).trim() : line;
-                return (
-                  <div key={line} className="recLine">
-                    <div className="recKey">{key}</div>
-                    <div className="recVal">{val}</div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="divider" />
-
-            {/* Items in order */}
-            <div style={{ marginTop: 14 }}>
-              <div className="label" style={{ marginBottom: 8 }}>
-                ITEMS (IN ORDER):
+                  );
+                })}
               </div>
 
-              <ul className="itemList">
-                {rec.itemsOrdered.map((it, idx) => (
-                  <li key={`${it.name}-${idx}`} className="itemRow">
-                    <span className="itemNum">{idx + 1}</span>
-                    <span className="itemName">{it.name}</span>
-                    {it.note &&
-                      (it.note.includes("BUY HERE") ? (
-                        <span className="buyHere">{it.note}</span>
-                      ) : (
-                        <span className="itemNote">{it.note}</span>
-                      ))}
-                  </li>
-                ))}
-              </ul>
-            </div>
+              <div className="divider" />
 
-            <div className="divider" />
-
-            {/* Fight rule */}
-            {rec.fightRule && (
               <div style={{ marginTop: 14 }}>
                 <div className="label" style={{ marginBottom: 8 }}>
-                  FIGHT RULE:
+                  ITEMS (IN ORDER):
                 </div>
 
-                <div className="fightRuleBox">
-                  <p className="fightRuleText">{rec.fightRule}</p>
-                </div>
+                <ul className="itemList">
+                  {rec.itemsOrdered.map((it, idx) => (
+                    <li key={`${it.name}-${idx}`} className="itemRow">
+                      <span className="itemNum">{idx + 1}</span>
+                      <span className="itemName">{it.name}</span>
+                      {it.note &&
+                        (it.note.includes("BUY HERE") ? (
+                          <span className="buyHere">{it.note}</span>
+                        ) : (
+                          <span className="itemNote">{it.note}</span>
+                        ))}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            )}
 
-            <p className="muted small" style={{ marginTop: 10 }}>
-              (Next: add “key threats” callout + better matchup branching.)
-            </p>
-          </>
-        )}
+              <div className="divider" />
+
+              {rec.fightRule && (
+                <div style={{ marginTop: 14 }}>
+                  <div className="label" style={{ marginBottom: 8 }}>
+                    FIGHT RULE:
+                  </div>
+
+                  <div className="fightRuleBox">
+                    <p className="fightRuleText">{rec.fightRule}</p>
+                  </div>
+                </div>
+              )}
+
+              <p className="muted small" style={{ marginTop: 10 }}>
+                (Next: add “key threats” callout + better matchup branching.)
+              </p>
+            </>
+          )}
         </div>
       </div>
+
       <footer className="footer">
         <span className="muted small">Tip: bookmark this page so you can open it during champ select.</span>
       </footer>
+
       <CoachChat context={coachContext} />
     </div>
   );

@@ -55,7 +55,13 @@ export function CoachChat({ context }: { context: CoachContext }) {
   }
 
   const title =
-    context.championKey === "volibear" ? "Volibear Top" : "Master Yi Jungle";
+  context.championKey === "masteryi"
+    ? "Master Yi Jungle"
+    : context.championKey === "belveth"
+      ? "Bel'Veth Jungle"
+      : context.championKey === "volibear"
+        ? "Volibear Top"
+        : "Heimerdinger Top";
 
   const enemyCount = context.enemyTeam?.length ?? 0;
 
