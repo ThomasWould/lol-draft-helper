@@ -193,26 +193,32 @@ export default function App() {
 
   return (
     <div className="page">
-      <div className="headerLeft">
-        <h1>LoL Draft Helper</h1>
-        <p className="sub">
-          Fast draft notes for <b>Master Yi / Bel'Veth (Jungle)</b> and{" "}
-          <b>Volibear / Heimerdinger (Top)</b>.
-        </p>
+      <header className="header">
+        <div className="headerLeft">
+          <div className="headerTextBlock">
+            <h1>LoL Draft Helper</h1>
 
-        <div className="headerTip">
-          Tip: bookmark this page so you can open it during champ select.
+            <p className="sub">
+              Fast draft notes for <b>Master Yi / Bel'Veth (Jungle)</b> and{" "}
+              <b>Volibear / Heimerdinger (Top)</b>.
+            </p>
+
+            <p className="muted small headerTip">
+              Tip: bookmark this page so you can open it during champ select.
+            </p>
+          </div>
+
+          <a
+            className="link"
+            href="https://github.com/ThomasWould/lol-draft-helper"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub
+          </a>
         </div>
+      </header>
 
-        <a
-          className="link"
-          href="https://github.com/ThomasWould/lol-draft-helper"
-          target="_blank"
-          rel="noreferrer"
-        >
-          GitHub
-        </a>
-      </div>
 
       <div className="grid">
         {/* LEFT: Inputs */}
