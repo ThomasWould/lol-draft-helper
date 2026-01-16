@@ -70,10 +70,26 @@ body::before {
 .header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start; /* was space-between */
   gap: 14px;
   margin: 0 0 14px;
   padding: 10px 2px 6px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.headerLeft .link {
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+/* give the subtitle space so the GitHub pill never touches it */
+.headerLeft .sub {
+  margin: 8px 0 12px; /* bottom margin added */
 }
 
 h1 {
@@ -150,23 +166,24 @@ h2 {
   }
 }
 
-/* Ultrawide: widen the whole layout */
+/* Ultrawide: widen layout + add 3rd column for Coach */
 @media (min-width: 1400px) {
   .page {
     width: min(1600px, 100%);
   }
   .grid {
-    grid-template-columns: minmax(360px, 440px) minmax(820px, 1120px);
+    grid-template-columns: minmax(360px, 440px) minmax(620px, 1fr) minmax(320px, 380px);
+    gap: 18px;
   }
 }
 
-/* Extra-wide: let the recommendations card breathe even more */
+/* Extra-wide: more breathing room */
 @media (min-width: 1700px) {
   .page {
     width: min(1800px, 100%);
   }
   .grid {
-    grid-template-columns: minmax(380px, 460px) minmax(920px, 1280px);
+    grid-template-columns: minmax(380px, 460px) minmax(760px, 1fr) minmax(340px, 420px);
   }
 }
 
@@ -778,6 +795,62 @@ textarea:focus {
 
 .scoutBullets li {
   margin: 4px 0;
+}
+
+/* -------- Docked Coach (right column) -------- */
+.coachCard {
+  padding: 0; /* CoachDock handles its own padding */
+}
+
+.coachDock {
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  height: 100%;
+}
+
+.coachDockHeader {
+  padding: 14px 14px 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.coachDockTitle {
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.coachDockSub {
+  margin-top: 3px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.coachDockToggle {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.92);
+  border-radius: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.coachDockBody {
+  padding: 12px 12px 0;
+  flex: 1;
+  overflow: auto;
+}
+
+/* collapsed state */
+.coachDock.collapsed {
+  min-height: unset;
+}
+.coachDock.collapsed .coachDockHeader {
+  border-bottom: none;
 }
 
 /* -------- Coach Chat Drawer -------- */

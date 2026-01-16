@@ -1,11 +1,19 @@
+// src/components/CoachChat.tsx
 import { useRef, useState } from "react";
 import type { CoachContext } from "../coach/types";
 
 type Role = "user" | "assistant";
 type Msg = { role: Role; content: string };
 
-export function CoachChat({ context }: { context: CoachContext }) {
-  const [open, setOpen] = useState(false);
+export function CoachChat({
+  context,
+  mode = "dock",
+}: {
+  context: CoachContext;
+  mode?: "dock" | "fab";
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [open, setOpen] = useState(false); // used only in fab mode
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
     {
@@ -21,7 +29,6 @@ export function CoachChat({ context }: { context: CoachContext }) {
     const text = input.trim();
     if (!text || loading) return;
 
-    // optimistic UI
     setMessages((m) => [...m, { role: "user", content: text }]);
     setInput("");
     setLoading(true);
@@ -30,7 +37,6 @@ export function CoachChat({ context }: { context: CoachContext }) {
       const r = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // send the latest user message + your injected context
         body: JSON.stringify({ message: text, context }),
       });
 
@@ -40,7 +46,6 @@ export function CoachChat({ context }: { context: CoachContext }) {
 
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
 
-      // scroll to bottom
       setTimeout(() => {
         listRef.current?.scrollTo({ top: 999999, behavior: "smooth" });
       }, 50);
@@ -55,77 +60,127 @@ export function CoachChat({ context }: { context: CoachContext }) {
   }
 
   const title =
-  context.championKey === "masteryi"
-    ? "Master Yi Jungle"
-    : context.championKey === "belveth"
-      ? "Bel'Veth Jungle"
-      : context.championKey === "volibear"
-        ? "Volibear Top"
-        : "Heimerdinger Top";
+    context.championKey === "volibear"
+      ? "Volibear Top"
+      : context.championKey === "heimerdinger"
+        ? "Heimerdinger Top"
+        : context.championKey === "belveth"
+          ? "Bel'Veth Jungle"
+          : "Master Yi Jungle";
 
   const enemyCount = context.enemyTeam?.length ?? 0;
 
-  return (
-    <>
-      <button className="coachFab" type="button" onClick={() => setOpen(true)}>
-        Coach
-      </button>
+  // (optional) keep FAB mode available
+  if (mode === "fab") {
+    return (
+      <>
+        <button className="coachFab" type="button" onClick={() => setOpen(true)}>
+          Coach
+        </button>
 
-      {open && (
-        <div className="coachOverlay" onClick={() => setOpen(false)}>
-          <div className="coachDrawer" onClick={(e) => e.stopPropagation()}>
-            <div className="coachHeader">
-              <div>
-                <div className="coachTitle">LoL Coach</div>
-                <div className="coachSub">
-                  {title} • {enemyCount ? `${enemyCount} enemies` : "no enemy team yet"}
-                  {context.enemyTop ? ` • top: ${context.enemyTop}` : ""}
+        {open && (
+          <div className="coachOverlay" onClick={() => setOpen(false)}>
+            <div className="coachDrawer" onClick={(e) => e.stopPropagation()}>
+              <div className="coachHeader">
+                <div>
+                  <div className="coachTitle">LoL Coach</div>
+                  <div className="coachSub">
+                    {title} • {enemyCount ? `${enemyCount} enemies` : "no enemy team yet"}
+                    {context.enemyTop ? ` • top: ${context.enemyTop}` : ""}
+                  </div>
                 </div>
+                <button className="coachClose" type="button" onClick={() => setOpen(false)}>
+                  ×
+                </button>
               </div>
-              <button
-                className="coachClose"
-                type="button"
-                onClick={() => setOpen(false)}
-              >
-                ×
-              </button>
-            </div>
 
-            <div className="coachBody" ref={listRef}>
-              {messages.map((m, i) => (
-                <div key={i} className={`coachMsg ${m.role}`}>
-                  <div className="coachBubble">{m.content}</div>
-                </div>
-              ))}
-              {loading && (
-                <div className="coachMsg assistant">
-                  <div className="coachBubble">Thinking…</div>
-                </div>
-              )}
-            </div>
+              <div className="coachBody" ref={listRef}>
+                {messages.map((m, i) => (
+                  <div key={i} className={`coachMsg ${m.role}`}>
+                    <div className="coachBubble">{m.content}</div>
+                  </div>
+                ))}
+                {loading && (
+                  <div className="coachMsg assistant">
+                    <div className="coachBubble">Thinking…</div>
+                  </div>
+                )}
+              </div>
 
-            <div className="coachInputRow">
-              <input
-                className="coachInput"
-                value={input}
-                placeholder="Ask for a plan, build tweak, pathing, win-con…"
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") send();
-                }}
-              />
-              <button
-                className="coachSend"
-                type="button"
-                onClick={send}
-                disabled={loading}
-              >
-                Send
-              </button>
+              <div className="coachInputRow">
+                <input
+                  className="coachInput"
+                  value={input}
+                  placeholder="Ask for a plan, build tweak, pathing, win-con…"
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") send();
+                  }}
+                />
+                <button className="coachSend" type="button" onClick={send} disabled={loading}>
+                  Send
+                </button>
+              </div>
             </div>
           </div>
+        )}
+      </>
+    );
+  }
+
+  // Docked mode (default)
+  return (
+    <div className={`coachDock ${collapsed ? "collapsed" : ""}`}>
+      <div className="coachDockHeader">
+        <div>
+          <div className="coachDockTitle">Coach</div>
+          <div className="coachDockSub">
+            {title} • {enemyCount ? `${enemyCount} enemies` : "no enemy team yet"}
+            {context.enemyTop ? ` • top: ${context.enemyTop}` : ""}
+          </div>
         </div>
+
+        <button
+          className="coachDockToggle"
+          type="button"
+          onClick={() => setCollapsed((v) => !v)}
+          title={collapsed ? "Expand" : "Collapse"}
+        >
+          {collapsed ? "▸" : "▾"}
+        </button>
+      </div>
+
+      {!collapsed && (
+        <>
+          <div className="coachDockBody" ref={listRef}>
+            {messages.map((m, i) => (
+              <div key={i} className={`coachMsg ${m.role}`}>
+                <div className="coachBubble">{m.content}</div>
+              </div>
+            ))}
+            {loading && (
+              <div className="coachMsg assistant">
+                <div className="coachBubble">Thinking…</div>
+              </div>
+            )}
+          </div>
+
+          <div className="coachInputRow">
+            <input
+              className="coachInput"
+              value={input}
+              placeholder="Ask for a plan, build tweak, pathing, win-con…"
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") send();
+              }}
+            />
+            <button className="coachSend" type="button" onClick={send} disabled={loading}>
+              Send
+            </button>
+          </div>
+        </>
       )}
-    </>
+    </div>
   );
 }

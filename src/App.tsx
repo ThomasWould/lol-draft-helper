@@ -194,23 +194,24 @@ export default function App() {
   return (
     <div className="page">
       <header className="header">
-        <div>
+        <div className="headerLeft">
           <h1>LoL Draft Helper</h1>
-          {/* ✅ NEW: update subtitle */}
           <p className="sub">
             Fast draft notes for <b>Master Yi / Bel'Veth (Jungle)</b> and{" "}
             <b>Volibear / Heimerdinger (Top)</b>.
           </p>
+
+          <a
+            className="link"
+            href="https://github.com/ThomasWould/lol-draft-helper"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub
+          </a>
         </div>
-        <a
-          className="link"
-          href="https://github.com/ThomasWould/lol-draft-helper"
-          target="_blank"
-          rel="noreferrer"
-        >
-          GitHub
-        </a>
       </header>
+
 
       <div className="grid">
         {/* LEFT: Inputs */}
@@ -346,7 +347,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* RIGHT: Recommendations */}
+        {/* MIDDLE: Recommendations */}
         <div className="card cardSticky cardGlow">
           <h2>Recommendations</h2>
 
@@ -461,13 +462,16 @@ export default function App() {
             </>
           )}
         </div>
+
+        {/* RIGHT: Coach (docked) */}
+        <div className="card cardSticky coachCard">
+          <CoachChat context={coachContext} mode="dock" />
+        </div>
       </div>
 
       <footer className="footer">
         <span className="muted small">Tip: bookmark this page so you can open it during champ select.</span>
       </footer>
-
-      <CoachChat context={coachContext} />
     </div>
   );
 }
