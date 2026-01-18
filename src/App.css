@@ -495,9 +495,6 @@ textarea:focus {
   font-size: 12px;
   line-height: 1;
   transition: transform 120ms ease, background 120ms ease, opacity 120ms ease;
-  margin-left: 10px;
-  margin-bottom: 8px;  /* 👈 creates space above the textarea */
-  align-self: flex-end;
 }
 
 .clearBtn:hover{
@@ -1031,4 +1028,16 @@ textarea:focus {
 .coachAttach:hover{
   background: rgba(255,255,255,0.06);
   transform: translateY(-1px);
+}
+
+.labelRow{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px; /* 👈 pushes textarea down */
+}
+
+.labelRow .label{
+  margin-bottom: 0; /* override label default spacing */
 }

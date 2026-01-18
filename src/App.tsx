@@ -244,7 +244,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="row">
+          <div className="labelRow">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <label className="label" style={{ marginBottom: 0 }}>
                 Enemy team (comma or newline separated)
