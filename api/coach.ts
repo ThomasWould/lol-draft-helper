@@ -27,7 +27,11 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { message, context } = req.body as { message?: string; context?: any };
+        const { message, context, images } = req.body as {
+      message?: string;
+      context?: any;
+      images?: string[];
+    };
 
     if (!message || typeof message !== "string") {
       return res.status(400).json({ error: "Missing message string" });
@@ -41,6 +45,8 @@ export default async function handler(req: any, res: any) {
       content: [
         "You are a League of Legends coach.",
         "Be concise, practical, and tailored to the provided app context.",
+        "",
+        "If screenshots are provided, read the scoreboard and call out: items/levels/sums + the top 2 actionable fixes.",
         "",
         "You will receive APP_CONTEXT containing:",
         "- championKey + championLabel + role",
@@ -68,11 +74,27 @@ export default async function handler(req: any, res: any) {
       ].join("\n"),
     };
 
+        const safeImages = Array.isArray(images) ? images.slice(0, 3) : [];
+
+    const userMessage =
+      safeImages.length > 0
+        ? {
+            role: "user" as const,
+            content: [
+              { type: "text", text: message },
+              ...safeImages.map((url) => ({
+                type: "image_url",
+                image_url: { url },
+              })),
+            ],
+          }
+        : { role: "user" as const, content: message };
+
     const completion = await withTimeout(
       client.chat.completions.create({
         model: "gpt-4o-mini",
         temperature: 0.6,
-        messages: [system, { role: "user", content: message }],
+        messages: [system, userMessage as any],
       }),
       25000
     );

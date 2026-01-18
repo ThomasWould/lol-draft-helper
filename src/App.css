@@ -987,3 +987,21 @@ textarea:focus {
 @media (max-width: 520px){
   .coachFab{ right: 12px; bottom: 12px; }
 }
+
+/* Tiny: differentiate the attach button from Send */
+.coachAttach{
+  width: 42px;
+  padding: 10px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.18);
+  color: rgba(255,255,255,0.90);
+}
+
+.coachAttach:hover{
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-1px);
+}
