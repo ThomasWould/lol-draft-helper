@@ -100,6 +100,11 @@ export default function App() {
   const [enemyRaw, setEnemyRaw] = useState("");
   const [enemyTopRaw, setEnemyTopRaw] = useState(""); // optional for TOP champs
 
+  function clearAllEnemyInputs() {
+    setEnemyRaw("");
+    setEnemyTopRaw("");
+  }
+
   const { loading, error, version, championList } = useChampionData();
 
   const tokens = useMemo(() => splitTokens(enemyRaw), [enemyRaw]);
@@ -240,7 +245,22 @@ export default function App() {
           </div>
 
           <div className="row">
-            <label className="label">Enemy team (comma or newline separated)</label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+              <label className="label" style={{ marginBottom: 0 }}>
+                Enemy team (comma or newline separated)
+              </label>
+
+              <button
+                type="button"
+                className="clearBtn"
+                onClick={clearAllEnemyInputs}
+                disabled={!enemyRaw.trim() && !enemyTopRaw.trim()}
+                title="Clear enemy team + top matchup"
+              >
+                Clear all
+              </button>
+            </div>
+
 
             {loading && <div className="muted small">Loading champion data…</div>}
             {error && <div className="muted small">Couldn’t load Data Dragon: {error}</div>}

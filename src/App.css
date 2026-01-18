@@ -484,6 +484,30 @@ textarea:focus {
   margin-left: 2px;
 }
 
+/* Clear all button (enemy team + top matchup) */
+.clearBtn{
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.86);
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  transition: transform 120ms ease, background 120ms ease, opacity 120ms ease;
+}
+
+.clearBtn:hover{
+  background: rgba(255,255,255,0.07);
+  transform: translateY(-1px);
+}
+
+.clearBtn:disabled{
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* --- Detected colored tags --- */
 .detRow {
   display: inline-flex;
