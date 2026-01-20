@@ -12,6 +12,8 @@ import { getVolibearRec } from "./recommendations/volibear";
 // ✅ NEW: add these imports
 import { getBelvethRec } from "./recommendations/belveth";
 import { getHeimerdingerRec } from "./recommendations/heimerdinger";
+import { getMissFortuneRec } from "./recommendations/missFortune";
+import { getLuxSupportRec } from "./recommendations/lux";
 
 import { EnemyScout } from "./components/EnemyScout";
 import { CoachChat } from "./components/CoachChat";
@@ -48,6 +50,10 @@ const CHAMP_META = {
 // ✅ NEW helper: top picks = Voli + Heimer
 function isTopPick(k: ChampionKey) {
   return k === "volibear" || k === "heimerdinger";
+}
+
+function isBotPick(k: ChampionKey) {
+  return k === "missfortune" || k === "lux";
 }
 
 function normalizeLoose(s: string) {
@@ -109,11 +115,14 @@ export default function App() {
   const [selected, setSelected] = useState<ChampionKey>("masteryi");
   const [enemyRaw, setEnemyRaw] = useState("");
   const [enemyTopRaw, setEnemyTopRaw] = useState(""); // optional for TOP champs
+  const [enemyBotRaw, setEnemyBotRaw] = useState(""); // optional for BOT champs (2 champs)
 
   function clearAllEnemyInputs() {
-    setEnemyRaw("");
-    setEnemyTopRaw("");
-  }
+  setEnemyRaw("");
+  setEnemyTopRaw("");
+  setEnemyBotRaw("");
+}
+
 
   const { loading, error, version, championList } = useChampionData();
 
@@ -139,20 +148,44 @@ export default function App() {
   const hasEnemyTeam = matched.length > 0;
   const hasEnemyTop = enemyTopNormalized.length > 0;
 
+  const botTokens = useMemo(() => splitTokens(enemyBotRaw), [enemyBotRaw]);
+  const { matched: botMatched } = useMemo(
+    () => resolveChampions(botTokens, championList),
+    [botTokens, championList]
+  );
+
+  // normalized: first 2 champs only
+  const enemyBotNormalized = useMemo(() => {
+    return botMatched.slice(0, 2).map((c) => normalizeLoose(c.name));
+  }, [botMatched]);
+
+  const hasEnemyBot = enemyBotNormalized.length > 0;
+
+
   // ✅ NEW: show recs if team exists OR top input exists for top picks
-  const shouldShowRecs = hasEnemyTeam || (isTopPick(selected) && hasEnemyTop);
+  const shouldShowRecs =
+  hasEnemyTeam ||
+  (isTopPick(selected) && hasEnemyTop) ||
+  (isBotPick(selected) && hasEnemyBot);
 
   // ✅ NEW: Scout targets = enemy team + (if TOP pick) enemy top champ even if no team entered
   const scoutChamps = useMemo(() => {
-    const base = [...matched];
-
+  const base = [...matched];
     if (isTopPick(selected) && topMatched.length > 0) {
       const top = topMatched[0];
       if (!base.some((c) => c.id === top.id)) base.unshift(top);
     }
 
+    if (isBotPick(selected) && botMatched.length > 0) {
+      // include up to 2 bot champs (prepend, preserve uniqueness)
+      for (const c of botMatched.slice(0, 2).reverse()) {
+        if (!base.some((x) => x.id === c.id)) base.unshift(c);
+      }
+    }
+
     return base;
-  }, [matched, selected, topMatched]);
+  }, [matched, selected, topMatched, botMatched]);
+
 
   // tags + pills from your tag engine
   const tags = useMemo(() => {
@@ -171,8 +204,15 @@ export default function App() {
     if (selected === "belveth") return getBelvethRec(tags, enemyNamesNormalized);
     if (selected === "volibear")
       return getVolibearRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
-    return getHeimerdingerRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
-  }, [selected, tags, enemyNamesNormalized, enemyTopNormalized]);
+    if (selected === "heimerdinger")
+      return getHeimerdingerRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
+
+    if (selected === "missfortune")
+      return getMissFortuneRec(tags, enemyNamesNormalized, enemyBotNormalized);
+
+    return getLuxSupportRec(tags, enemyNamesNormalized, enemyBotNormalized);
+  }, [selected, tags, enemyNamesNormalized, enemyTopNormalized, enemyBotNormalized]);
+
 
   const coachContext: CoachContext = useMemo(() => {
     // ✅ NEW: champMeta for 4 champs
@@ -187,6 +227,7 @@ export default function App() {
 
       // keep top optional; for junglers it can still show (harmless)
       enemyTop: enemyTopRaw.trim() || undefined,
+      enemyBot: enemyBotRaw.trim() || undefined,
 
       detected: {
         tanks: tags.counts.tanks ?? 0,
@@ -378,6 +419,22 @@ export default function App() {
               </div>
             )}
 
+            {/* ✅ NEW: Optional enemy bot lane (for BOT champs: MF + Lux) */}
+            {isBotPick(selected) && (
+              <div style={{ marginTop: 14 }}>
+                <label className="label">Enemy bot lane (optional — 2 champs improves lane + wave advice)</label>
+                <ChampionTextarea
+                  value={enemyBotRaw}
+                  onChange={setEnemyBotRaw}
+                  championList={championList}
+                  disabled={loading || !!error}
+                />
+                <div className="hint">
+                  Tip: put the enemy <b>ADC + Support</b> here (e.g., Jinx, Leona). Used for lane + wave branching.
+                </div>
+              </div>
+            )}
+
             {/* ✅ NEW: Top champs show scout AFTER top input */}
             {isTopPick(selected) && scoutChamps.length > 0 && (
               <div style={{ marginTop: 12 }}>
@@ -444,7 +501,7 @@ export default function App() {
                   );
                 })}
                 
-                {isTopPick(selected) && rec.waveTips && (
+                {(isTopPick(selected) || isBotPick(selected)) && rec.waveTips && (
                   <div className="waveBox">
                     <div className="waveHeader">
                       <div className="waveKey">WAVE</div>

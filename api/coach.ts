@@ -69,6 +69,10 @@ export default async function handler(req: any, res: any) {
         "7) If playing Volibear top: mention wave plan and R dive windows.",
         "8) If playing Heimerdinger top: emphasize turret setup before fights, E stun punish windows, and objective zone control (R+Q/R+E usage).",
         "9) Never mention 'JSON' or 'context injection'—just act like you already know the draft.",
+        "10) If playing Miss Fortune ADC: prioritize clean R angles, track engage CC, and mention lane trading via Q bounce and E slow setups.",
+        "11) If playing Lux Support: emphasize Q pick windows, shielding key burst, and using E zoning for wave/brush control; call out anti-hook positioning vs engage supports.",
+        "Matchup hint: if APP_CONTEXT.enemyBot is present, use it for lane/wave advice even if enemy team list is incomplete.",
+
         "",
         `APP_CONTEXT: ${ctx}`,
       ].join("\n"),

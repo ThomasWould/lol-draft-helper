@@ -5,7 +5,8 @@ export type CoachContext = {
   // rest same...
   enemyTeam: string[];
   enemyTop?: string;
-
+  enemyBot?: string; // raw text "Jinx, Leona" (optional)
+  
   detected: {
     tanks: number;
     ccBurst: number;
