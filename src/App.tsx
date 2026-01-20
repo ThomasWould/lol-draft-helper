@@ -230,18 +230,23 @@ export default function App() {
         <div className="card inputsCard">
           <div className="row">
             <label className="label">Pick your champion</label>
-            <div className="segmented">
-              {CHAMPIONS.map((c) => (
-                <button
-                  key={c.key}
-                  className={`segBtn ${selected === c.key ? "active" : ""}`}
-                  onClick={() => setSelected(c.key)}
-                  type="button"
-                >
-                  {c.label} <span className="muted">({c.role})</span>
-                </button>
-              ))}
-            </div>
+            <select
+              className="champSelect"
+              value={selected}
+              onChange={(e) => setSelected(e.target.value as ChampionKey)}
+            >
+              <optgroup label="Jungle">
+                <option value="masteryi">Master Yi</option>
+                <option value="belveth">Bel'Veth</option>
+              </optgroup>
+              <optgroup label="Top">
+                <option value="volibear">Volibear</option>
+                <option value="heimerdinger">Heimerdinger</option>
+              </optgroup>
+
+              {/* we'll add Bot later */}
+            </select>
+
           </div>
 
           <div className="row">
