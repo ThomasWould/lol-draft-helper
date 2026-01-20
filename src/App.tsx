@@ -18,14 +18,22 @@ import { CoachChat } from "./components/CoachChat";
 import type { CoachContext } from "./coach/types";
 
 // ✅ NEW: expand ChampionKey
-type ChampionKey = "masteryi" | "belveth" | "volibear" | "heimerdinger";
+type ChampionKey =
+  | "masteryi"
+  | "belveth"
+  | "volibear"
+  | "heimerdinger"
+  | "missfortune"
+  | "lux";
 
 // ✅ NEW: add champs to CHAMPIONS
-const CHAMPIONS: { key: ChampionKey; label: string; role: string }[] = [
+const CHAMPIONS: { key: ChampionKey; label: string; role: "Jungle" | "Top" | "ADC" | "Support" }[] = [
   { key: "masteryi", label: "Master Yi", role: "Jungle" },
   { key: "belveth", label: "Bel'Veth", role: "Jungle" },
   { key: "volibear", label: "Volibear", role: "Top" },
   { key: "heimerdinger", label: "Heimerdinger", role: "Top" },
+  { key: "missfortune", label: "Miss Fortune", role: "ADC" },
+  { key: "lux", label: "Lux", role: "Support" },
 ];
 
 const CHAMP_META = {
@@ -33,6 +41,8 @@ const CHAMP_META = {
   belveth: { label: "Bel'Veth", role: "Jungle" },
   volibear: { label: "Volibear", role: "Top" },
   heimerdinger: { label: "Heimerdinger", role: "Top" },
+  missfortune: { label: "Miss Fortune", role: "ADC" },
+  lux: { label: "Lux", role: "Support" },
 } as const;
 
 // ✅ NEW helper: top picks = Voli + Heimer
@@ -235,18 +245,16 @@ export default function App() {
               value={selected}
               onChange={(e) => setSelected(e.target.value as ChampionKey)}
             >
-              <optgroup label="Jungle">
-                <option value="masteryi">Master Yi</option>
-                <option value="belveth">Bel'Veth</option>
-              </optgroup>
-              <optgroup label="Top">
-                <option value="volibear">Volibear</option>
-                <option value="heimerdinger">Heimerdinger</option>
-              </optgroup>
-
-              {/* we'll add Bot later */}
+              {(["Jungle", "Top", "ADC", "Support"] as const).map((role) => (
+                <optgroup key={role} label={role}>
+                  {CHAMPIONS.filter((c) => c.role === role).map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
-
           </div>
 
           <div className="row">

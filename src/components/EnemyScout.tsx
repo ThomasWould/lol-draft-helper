@@ -1,8 +1,9 @@
 // src/components/EnemyScout.tsx
 import { useMemo } from "react";
 import type { DDragonChampion } from "../api/ddragon";
+import type { CoachContext } from "../coach/types";
 
-type Selected = "masteryi" | "belveth" | "volibear" | "heimerdinger";
+type Selected = CoachContext["championKey"];
 
 type Props = {
   selected: Selected;

@@ -1,7 +1,7 @@
 export type CoachContext = {
-  championKey: "masteryi" | "belveth" | "volibear" | "heimerdinger";
-  championLabel: "Master Yi" | "Bel'Veth" | "Volibear" | "Heimerdinger";
-  role: "Jungle" | "Top";
+  championKey: "masteryi" | "belveth" | "volibear" | "heimerdinger"|"missfortune"|"lux";
+  championLabel: "Master Yi" | "Bel'Veth" | "Volibear" | "Heimerdinger" | "Miss Fortune" | "Lux";
+  role: "Jungle" | "Top" | "ADC" | "Support";
   // rest same...
   enemyTeam: string[];
   enemyTop?: string;
