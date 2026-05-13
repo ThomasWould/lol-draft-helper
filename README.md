@@ -48,3 +48,11 @@ The test suite covers:
 - enemy chip removal
 - Volibear top matchup guidance
 - mobile responsiveness
+
+## Playwright report
+After running the suite locally, open the HTML report with:
+```bash
+npx playwright show-report
+```
+
+The GitHub Actions workflow also uploads the generated `playwright-report/` artifact so you can review test results from the Actions run.
