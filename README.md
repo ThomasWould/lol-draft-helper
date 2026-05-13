@@ -55,4 +55,9 @@ After running the suite locally, open the HTML report with:
 npx playwright show-report
 ```
 
+If port `9323` is already in use, open the report on another port:
+```bash
+npx playwright show-report --port=9324
+```
+
 The GitHub Actions workflow also uploads the generated `playwright-report/` artifact so you can review test results from the Actions run.
