@@ -9,6 +9,7 @@ type Props = {
   disabled?: boolean;
   placeholder?: string;
   rows?: number;
+  ariaLabel?: string;
 };
 
 function normalize(s: string) {
@@ -30,6 +31,7 @@ export function ChampionTextarea({
   disabled,
   placeholder = "Example: Diana, Zyra, Caitlyn, Darius, Thresh",
   rows = 4,
+  ariaLabel,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -83,6 +85,7 @@ export function ChampionTextarea({
         ref={taRef}
         disabled={disabled}
         value={value}
+        aria-label={ariaLabel}
         onChange={(e) => {
           onChange(e.target.value);
           setHighlight(0);

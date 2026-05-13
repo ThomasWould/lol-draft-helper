@@ -324,6 +324,7 @@ export default function App() {
               onChange={setEnemyRaw}
               championList={championList}
               disabled={loading || !!error}
+              ariaLabel="Enemy team"
             />
 
             <div className="hint">
@@ -412,6 +413,7 @@ export default function App() {
                   onChange={setEnemyTopRaw}
                   championList={championList}
                   disabled={loading || !!error}
+                  ariaLabel="Enemy top"
                 />
                 <div className="hint">
                   Tip: put the likely enemy top laner here (e.g., Teemo, Quinn, Gnar). Helps matchup branching.
@@ -428,6 +430,7 @@ export default function App() {
                   onChange={setEnemyBotRaw}
                   championList={championList}
                   disabled={loading || !!error}
+                  ariaLabel="Enemy bot lane"
                 />
                 <div className="hint">
                   Tip: put the enemy <b>ADC + Support</b> here (e.g., Jinx, Leona). Used for lane + wave branching.
