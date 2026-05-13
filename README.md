@@ -22,15 +22,29 @@ npm run dev
 ```
 
 ## QA Automation
+This project uses Playwright for UI automation against the local Vite app.
+
+Install dependencies:
+```bash
+npm install
+```
+
+Run the full Playwright suite:
 ```bash
 npm run test:e2e
 ```
 
-Run the interactive Playwright runner with:
+Open the Playwright UI runner:
 ```bash
 npm run test:e2e:ui
 ```
 
-The Playwright suite uses `playwright.config.ts` and launches the app against the local Vite server at `http://127.0.0.1:5173`.
-
-The tests cover homepage rendering, champion selection, enemy team detection, chip removal, top-lane matchup guidance, and a mobile viewport smoke test.
+The test suite covers:
+- homepage smoke test
+- champion selection
+- enemy team parsing
+- detected draft tags
+- Master Yi recommendation flow
+- enemy chip removal
+- Volibear top matchup guidance
+- mobile responsiveness
