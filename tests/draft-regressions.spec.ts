@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import champions from '../src/data/champions.json' with { type: 'json' };
 
 async function mockData(page: Page, version = '16.20.1') {
+  await page.route('**/img/**', route => route.abort());
   await page.route('**/api/versions.json', route => route.fulfill({ json: [version] }));
   await page.route('**/data/en_US/champion.json', route => route.fulfill({ json: { data: champions } }));
   await page.route('**/img/champion/**', route => route.abort());

@@ -307,3 +307,143 @@ test("lane quick picks select, replace and limit matchups without duplicating en
     "First Strike",
   );
 });
+
+test("saved drafts restore champion, lane and analysis after a reload", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("combobox").selectOption("volibear");
+  await page
+    .getByRole("textbox", { name: "Enemy top", exact: true })
+    .fill("Teemo");
+  await page.locator(".draftLibrary > summary").click();
+  await page
+    .getByRole("textbox", { name: "Draft name", exact: true })
+    .fill("Ranged lane plan");
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await page.getByRole("combobox").selectOption("masteryi");
+  await page
+    .getByRole("textbox", { name: "Enemy team", exact: true })
+    .fill("Jinx");
+  await expect(page.getByText("Draft saved on this device")).toBeVisible();
+  await page.reload();
+  await page.locator(".draftLibrary > summary").click();
+  await page
+    .getByRole("button", { name: "Load Ranged lane plan", exact: true })
+    .click();
+  await expect(page.getByRole("combobox")).toHaveValue("volibear");
+  await expect(
+    page.getByRole("textbox", { name: "Enemy top", exact: true }),
+  ).toHaveValue("Teemo");
+  await expect(page.locator(".detRanged")).toBeVisible();
+  await expect(page.locator(".enemySlot.filled")).toHaveCount(1);
+  await page
+    .getByRole("button", {
+      name: "Remove saved draft Ranged lane plan",
+      exact: true,
+    })
+    .click();
+  await expect(page.locator(".libraryList li")).toHaveCount(0);
+  await expect(
+    page.getByRole("textbox", { name: "Enemy top", exact: true }),
+  ).toHaveValue("Teemo");
+});
+
+test("draft library enforces capacity and storage denial never claims a saved copy", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Explore an example", exact: true })
+    .click();
+  await page.locator(".draftLibrary > summary").click();
+  for (let i = 1; i <= 6; i++) {
+    await page
+      .getByRole("textbox", { name: "Draft name", exact: true })
+      .fill(`Draft ${i}`);
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  }
+  await expect(page.locator(".libraryList li")).toHaveCount(6);
+  await expect(
+    page.getByRole("button", { name: "Save draft", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Remove saved draft Draft 1", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Save draft", exact: true }),
+  ).toBeEnabled();
+  await page.evaluate(() => {
+    Storage.prototype.setItem = () => {
+      throw new Error("Denied");
+    };
+  });
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(
+    page.getByText(
+      "Device storage is unavailable. Share this draft to keep a copy.",
+    ),
+  ).toBeVisible();
+  await expect(page.locator(".libraryList li")).toHaveCount(5);
+});
+
+test("baseline comparison shows actual draft changes and updates when opponents are removed", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Enemy team", exact: true })
+    .fill("Malphite, Leona, Malzahar");
+  await page.locator(".planImpact > summary").click();
+  await expect(page.locator(".impactAfter").last()).toContainText(
+    "Mercurial Scimitar",
+  );
+  await expect(page.locator(".planImpact")).toContainText("Rune page adapted");
+  await page
+    .getByRole("textbox", { name: "Enemy team", exact: true })
+    .fill("Jinx");
+  await expect(page.locator(".planImpact")).toContainText("Baseline setup");
+  await expect(page.locator(".impactChanges li")).toHaveCount(0);
+});
+
+test("draft library ignores corrupt entries and identifies plans saved on an older patch", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "draftroom.library.v1",
+      JSON.stringify([
+        {
+          id: "old",
+          name: "Old patch plan",
+          patch: "26.19",
+          savedAt: "2026-10-01T12:00:00Z",
+          draft: {
+            selected: "lux",
+            enemyRaw: "Leona",
+            enemyTopRaw: "",
+            enemyBotRaw: "",
+          },
+        },
+        {
+          id: "bad",
+          name: "Corrupt plan",
+          patch: "26.20",
+          savedAt: "invalid",
+          draft: { selected: "unknown" },
+        },
+      ]),
+    );
+  });
+  await page.goto("/");
+  await page.locator(".draftLibrary > summary").click();
+  await expect(page.locator(".libraryList li")).toHaveCount(1);
+  await expect(page.locator(".libraryList")).toContainText(
+    "Advice will use the current reviewed patch.",
+  );
+  await page
+    .getByRole("button", { name: "Load Old patch plan", exact: true })
+    .click();
+  await expect(page.getByRole("combobox")).toHaveValue("lux");
+  await expect(page.locator(".planSource")).toContainText("26.20");
+});

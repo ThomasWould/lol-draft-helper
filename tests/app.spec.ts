@@ -87,6 +87,7 @@ const championData = {
 };
 
 async function stubDdragon(page: Page) {
+  await page.route('**/img/**', route => route.abort());
   await page.route('https://ddragon.leagueoflegends.com/api/versions.json', (route: Route) => {
     route.fulfill({
       status: 200,

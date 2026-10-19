@@ -5,27 +5,17 @@ import { ChampionTextarea } from "./components/ChampionTextarea";
 import type { DDragonChampion } from "./api/ddragon";
 
 // recommendations + tags
-import { getDraftTagsFromTraits, tagsToPills } from "./recommendations/tags";
-import { getMasterYiRec } from "./recommendations/masterYi";
-import type { ChampRec } from "./recommendations/types";
+import { tagsToPills } from "./recommendations/tags";
+import { analyzeDraft } from "./recommendations/engine";
+import { PlanImpact } from "./components/PlanImpact";
+import { DraftLibrary } from "./components/DraftLibrary";
 import {
   CHAMPIONS,
   META,
   matchesReviewedPatch,
   type ChampionKey,
 } from "./recommendations/meta";
-import {
-  normalizeLoose,
-  splitTokens,
-  resolveChampions,
-  removeEnemy,
-} from "./draft";
-import { getVolibearRec } from "./recommendations/volibear";
-
-import { getBelvethRec } from "./recommendations/belveth";
-import { getHeimerdingerRec } from "./recommendations/heimerdinger";
-import { getMissFortuneRec } from "./recommendations/missFortune";
-import { getLuxSupportRec } from "./recommendations/lux";
+import { normalizeLoose, removeEnemy } from "./draft";
 
 import { GameIcon } from "./components/GameIcon";
 import { Icon } from "./components/Icon";
@@ -92,90 +82,25 @@ export default function App() {
 
   const { loading, error, version, championList } = useChampionData();
 
-  const tokens = useMemo(() => splitTokens(enemyRaw), [enemyRaw]);
-  const { matched, unmatched } = useMemo(
-    () => resolveChampions(tokens, championList),
-    [tokens, championList],
-  );
-
-  // resolve enemy top textbox into a champion (for Top picks)
-  const topTokens = useMemo(() => splitTokens(enemyTopRaw), [enemyTopRaw]);
-  const { matched: topMatched, unmatched: topUnmatched } = useMemo(
-    () => resolveChampions(topTokens, championList),
-    [topTokens, championList],
-  );
-
-  const botTokens = useMemo(() => splitTokens(enemyBotRaw), [enemyBotRaw]);
-  const { matched: botMatched, unmatched: botUnmatched } = useMemo(
-    () => resolveChampions(botTokens, championList),
-    [botTokens, championList],
-  );
-  const activeTop = isTopPick(selected) ? topMatched[0] : undefined;
-  const enemyTopNormalized = activeTop ? normalizeLoose(activeTop.name) : "";
-  const enemyBotNormalized = useMemo(
-    () =>
-      isBotPick(selected)
-        ? botMatched.slice(0, 2).map((c) => normalizeLoose(c.name))
-        : [],
-    [selected, botMatched],
-  );
-  const allEnemies = useMemo(() => {
-    const lane = isTopPick(selected)
-      ? topMatched.slice(0, 1)
-      : isBotPick(selected)
-        ? botMatched.slice(0, 2)
-        : [];
-    return [...lane, ...matched].filter(
-      (c, i, all) => all.findIndex((x) => x.id === c.id) === i,
-    );
-  }, [selected, topMatched, botMatched, matched]);
-  const scoutChamps = useMemo(() => allEnemies.slice(0, 5), [allEnemies]);
-  const enemyNamesNormalized = useMemo(
-    () => scoutChamps.map((c) => normalizeLoose(c.name)),
-    [scoutChamps],
-  );
-  const shouldShowRecs = scoutChamps.length > 0;
-  const tags = useMemo(
-    () =>
-      getDraftTagsFromTraits(
-        enemyNamesNormalized,
-        championList,
-        enemyTopNormalized || undefined,
-      ),
-    [enemyNamesNormalized, championList, enemyTopNormalized],
-  );
-
-  const tagPills = useMemo(() => tagsToPills(tags), [tags]);
-
-  const rec: ChampRec = useMemo(() => {
-    if (selected === "masteryi")
-      return getMasterYiRec(tags, enemyNamesNormalized);
-    if (selected === "belveth")
-      return getBelvethRec(tags, enemyNamesNormalized);
-    if (selected === "volibear")
-      return getVolibearRec(
-        tags,
-        enemyNamesNormalized,
-        enemyTopNormalized || undefined,
-      );
-    if (selected === "heimerdinger")
-      return getHeimerdingerRec(
-        tags,
-        enemyNamesNormalized,
-        enemyTopNormalized || undefined,
-      );
-
-    if (selected === "missfortune")
-      return getMissFortuneRec(tags, enemyNamesNormalized, enemyBotNormalized);
-
-    return getLuxSupportRec(tags, enemyNamesNormalized, enemyBotNormalized);
-  }, [
-    selected,
-    tags,
-    enemyNamesNormalized,
+  const {
+    matched,
+    unmatched,
+    topMatched,
+    topUnmatched,
+    botMatched,
+    botUnmatched,
+    activeTop,
     enemyTopNormalized,
     enemyBotNormalized,
-  ]);
+    allEnemies,
+    scoutChamps,
+    tags,
+    rec,
+    baseline,
+  } = useMemo(() => analyzeDraft(draft, championList), [draft, championList]);
+  const shouldShowRecs = scoutChamps.length > 0;
+
+  const tagPills = useMemo(() => tagsToPills(tags), [tags]);
 
   const coachContext: CoachContext = useMemo(() => {
     const champMeta = CHAMPIONS[selected];
@@ -229,6 +154,7 @@ export default function App() {
       await navigator.clipboard.writeText(
         [
           `${champion.label} · ${champion.role} · Patch ${META.patch}`,
+          `Opponents: ${scoutChamps.map((c) => c.name).join(", ")}`,
           ...rec.headlineLines,
           ...rec.runes,
           `Skills: ${rec.skillOrder}`,
@@ -355,6 +281,18 @@ export default function App() {
           />
         )}
 
+        <DraftLibrary
+          draft={draft}
+          canSave={shouldShowRecs}
+          onLoad={(next) => {
+            setDraft(next);
+            setLockIn(false);
+            setUndoDraft(null);
+            setShareStatus("");
+            setShareFallback("");
+            setCopyState("idle");
+          }}
+        />
         <div className="workspace">
           <section className="card inputsCard" aria-label="Draft setup">
             <div className="sectionHeading">
@@ -765,6 +703,7 @@ export default function App() {
                       );
                     })}
                   </div>
+                  <PlanImpact baseline={baseline} rec={rec} />
                   <div className="buildHeader">
                     <div>
                       <span className="eyebrow">THE RIGHT TOOLS</span>

@@ -1849,6 +1849,242 @@ details[open] > summary > .icon:last-child {
   line-height: 1.6;
   margin: 0;
 }
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.draftLibrary {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: -10px 0 24px;
+  background: #14171b;
+}
+.draftLibrary summary,
+.planImpact summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  padding: 15px 18px;
+}
+.draftLibrary summary::-webkit-details-marker,
+.planImpact summary::-webkit-details-marker {
+  display: none;
+}
+.draftLibrary summary > .icon:first-child,
+.planImpact summary > .icon:first-child {
+  color: var(--gold);
+}
+.draftLibrary summary > span {
+  font-size: 12px;
+}
+.draftLibrary summary > small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
+}
+.draftLibrary summary > .icon:last-child,
+.planImpact summary > .icon:last-child {
+  width: 14px;
+  color: var(--muted);
+  transition: transform 160ms;
+}
+.draftLibrary[open] summary > .icon:last-child,
+.planImpact[open] summary > .icon:last-child {
+  transform: rotate(180deg);
+}
+.libraryBody {
+  border-top: 1px solid var(--border);
+  padding: 4px 18px 18px;
+}
+.libraryBody > p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.librarySave {
+  display: flex;
+  gap: 10px;
+}
+.librarySave input {
+  min-width: 0;
+  flex: 1;
+  background: #0c0e11;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 11px 12px;
+  font-size: 12px;
+}
+.librarySave input:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.libraryBody > .libraryStatus {
+  color: var(--teal);
+}
+.libraryList {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+.libraryList li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #0f1216;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.libraryList li > div {
+  min-width: 0;
+  flex: 1;
+}
+.libraryList strong,
+.libraryList span,
+.libraryList small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.libraryList strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+}
+.libraryList span,
+.libraryList small {
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 5px;
+  line-height: 1.6;
+}
+.libraryList small {
+  color: var(--gold);
+}
+.libraryList button {
+  flex-shrink: 0;
+}
+.planImpact {
+  border: 1px solid #38423d;
+  background: #7ac4b305;
+  border-radius: 9px;
+  margin: 20px 0;
+}
+.planImpact summary > span {
+  flex: 1;
+  min-width: 0;
+}
+.planImpact summary b {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.planImpact summary small {
+  display: block;
+  font-size: 10px;
+  color: var(--teal);
+  margin-top: 5px;
+  line-height: 1.6;
+}
+.impactBody {
+  border-top: 1px solid #38423d;
+  padding: 0 18px 8px;
+}
+.impactBody > p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.impactChanges {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  margin: 18px 0;
+}
+.impactChanges li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.impactSlot {
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: #7ac4b315;
+  color: var(--teal);
+  border-radius: 5px;
+  font-size: 10px;
+}
+.impactChanges li > div {
+  min-width: 0;
+}
+.impactBefore {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+.impactAfter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+  font-size: 12px;
+  margin-top: 5px;
+}
+.impactAfter .icon {
+  color: var(--teal);
+  width: 13px;
+  height: 13px;
+}
+.impactChanges small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+  margin-top: 6px;
+}
+.impactExtra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--gold);
+}
+.impactExtra .icon {
+  width: 15px;
+  height: 15px;
+}
+.lockInMode .draftLibrary {
+  display: none;
+}
+@media (max-width: 420px) {
+  .librarySave {
+    flex-direction: column;
+  }
+  .libraryList li {
+    gap: 7px;
+    padding: 10px;
+  }
+  .libraryList .iconButton {
+    padding: 4px;
+  }
+}
 .laneQuickPicks {
   margin-top: 12px;
 }

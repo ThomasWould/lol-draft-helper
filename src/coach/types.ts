@@ -1,13 +1,15 @@
+import type { CHAMPIONS, ChampionKey } from "../recommendations/meta";
+
 export type CoachContext = {
   patch: string;
   reviewedAt: string;
-  championKey: "masteryi" | "belveth" | "volibear" | "heimerdinger"|"missfortune"|"lux";
-  championLabel: "Master Yi" | "Bel'Veth" | "Volibear" | "Heimerdinger" | "Miss Fortune" | "Lux";
-  role: "Jungle" | "Top" | "ADC" | "Support";
+  championKey: ChampionKey;
+  championLabel: (typeof CHAMPIONS)[ChampionKey]["label"];
+  role: (typeof CHAMPIONS)[ChampionKey]["role"];
   enemyTeam: string[];
   enemyTop?: string;
   enemyBot?: string; // raw text "Jinx, Leona" (optional)
-  
+
   detected: {
     tanks: number;
     ccBurst: number;
@@ -27,4 +29,3 @@ export type CoachContext = {
     starter: string[];
   };
 };
-

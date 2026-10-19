@@ -29,6 +29,12 @@ The app checks the latest Data Dragon roster, validates cached data, and falls b
 
 ## Interface
 
+**Draft library** stores up to six named plans on this device. Loading restores the champion and all opponent/lane fields; advice is recomputed with the app's current reviewed patch. Old patch labels remain visible, and saving never silently replaces another entry.
+
+**What this draft changed** compares ordered items, selected runes and starting setup with the same champion's neutral baseline. Changes are exact differences, rather than matchup win-rate estimates. Fight and wave advice may also adapt when no equipment changes are triggered.
+
+Draft analysis lives in `src/recommendations/engine.ts`, with one typed builder registration per supported champion. The main plan and baseline comparison use the same lane selection, deduplication and five-opponent limit. Saved, shared and restored drafts use a common input validator.
+
 Rune pages show Riot's rune artwork and separate primary, secondary and shard choices. The reviewed Data Dragon rune catalog powers validation of every build branch: four primary runes, two secondary runes, no duplicate rows, and no secondary keystones. Lane matchup buttons let you select known opponents directly without retyping names.
 
 Drafts automatically save on the current device, including the selected champion and optional lane matchups. **Share draft** copies a versioned URL containing the draft; opening it imports the setup and recomputes advice with the app's reviewed patch. Clipboard failures expose a selectable link. **Clear all** can be undone until the next edit.
