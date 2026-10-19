@@ -1,10 +1,8 @@
+import { hasAny } from "./shared";
 // src/recommendations/volibear.ts
 import type { DraftTags } from "./tags";
-import type { ChampRec } from "./masterYi";
+import type { ChampRec } from "./types";
 
-function hasAny(enemies: string[], keys: string[]) {
-  return enemies.some((e) => keys.some((k) => e.includes(k)));
-}
 
 function pickBoots(opts: {
   heavyAP: boolean;
@@ -16,7 +14,7 @@ function pickBoots(opts: {
   // Default: Lucidity (very common on Voli because haste matters a lot)
   // Override if lane or comp demands hard resists.
   if (opts.topIsAutoAD || opts.heavyAD) return "Plated Steelcaps";
-  if (opts.topIsAP || opts.heavyAP || opts.heavyCCBurst) return "Merc Treads";
+  if (opts.topIsAP || opts.heavyAP) return "Mercury’s Treads";
   return "Ionian Boots of Lucidity";
 }
 
@@ -62,14 +60,14 @@ export function getVolibearRec(
 
   // Enemy team threat hints (basic but practical)
   const CRIT_THREATS = ["jinx", "caitlyn", "tristana", "tryndamere", "yasuo", "yone", "aphelios"];
-  const ONHIT_AA_THREATS = ["vayne", "kogmaw", "kai", "kaisa", "varus", "masteryi", "belveth", "jax", "irelia"];
+  const ONHIT_AA_THREATS = ["vayne", "kogmaw", "kaisa", "varus", "masteryi", "belveth", "jax", "irelia"];
   const critThreat = hasAny(enemies, CRIT_THREATS);
   const aaThreat = hasAny(enemies, ONHIT_AA_THREATS) || topIsAutoAD;
 
   // Runes + start (lane-focused)
   const runesLine = topIsRanged || tags.rangedTop
-    ? "RUNES: Grasp + Second Wind (poke lane stability)"
-    : "RUNES: PTA (kill pressure) or Grasp (matchup dependent)";
+    ? "RUNES: Lethal Tempo + Second Wind / Revitalize (ranged-lane adjustment)"
+    : "RUNES: Lethal Tempo / Triumph / Legend: Haste / Last Stand";
 
   const startItem = pickStart({
   topIsRanged: topIsRanged || tags.rangedTop,
@@ -85,9 +83,9 @@ const startLine =
       ? "START: Doran’s Blade (melee all-in pressure)"
       : "START: Doran’s Ring (most common — mana + lane control)";
 
-  // Tear is extremely common in the “haste/tank” build path
+  // Reviewed bruiser baseline; Fimbulwinter remains a separate alternative.
   const tearLine =
-    "TEAR: YES — buy Tear early (first base if possible) to enable Winter’s Approach timing";
+    "BUILD: Dusk and Dawn → Navori Flickerblade; Tear is optional for a separate Fimbulwinter tank path.";
 
   const boots = pickBoots({
     heavyAP: tags.heavyAP,
@@ -139,60 +137,17 @@ const startLine =
     ],
   };
 
-  // ---- Core 6 Build Logic (matchup + comp) ----
-  //
-  // Core identity we’re encoding:
-  // - Winter’s Approach (Tear early) + haste boots (often Lucidity)
-  // - Spirit Visage as a staple (especially with healing/shields)
-  // - Frozen Heart / Unending Despair as common mid/late durability
-  // - Randuin (crit) or Thornmail (healing) as targeted tech
-  // - Riftmaker as a “damage/sustain closer” when you need to actually kill people
-  //
-  // We keep it deterministic and readable in champ select.
-
-  const items: { name: string; note?: string }[] = [];
-
-  // 1) Winter’s core (with Tear note)
-  items.push({ name: "Winter’s Approach", note: "(buy Tear early → upgrades later)" });
-
-  // 2) Boots slot
-  items.push({ name: boots });
-
-  // 3) Spirit Visage is a very consistent “core” item
-  //    (especially good when you’re frontlining and W sustaining)
-  items.push({
-    name: "Spirit Visage",
-    note: topIsAP || tags.heavyAP ? "(prioritize earlier vs AP)" : undefined,
-  });
-
-  // 4) Armor vs AA threats OR teamfight drain item
-  if (aaThreat || tags.heavyAD) {
-    items.push({ name: "Frozen Heart", note: "(huge vs auto attackers / AS)" });
-  } else {
-    items.push({ name: "Unending Despair", note: "(teamfight durability / drain)" });
-  }
-
-  // 5) Anti-heal or second durability slot
-  if (tags.healing || topIsHealing) {
-    items.push({ name: "Thornmail", note: "(anti-heal — component early if needed)" });
-  } else if (items.some((x) => x.name === "Frozen Heart")) {
-    items.push({ name: "Unending Despair" });
-  } else {
-    items.push({ name: "Frozen Heart", note: "(good default armor slot)" });
-  }
-
-  // 6) Final slot: crit tech or damage closer
-  if (critThreat) {
-    items.push({ name: "Randuin’s Omen", note: "(anti-crit / anti-burst)" });
-  } else {
-    items.push({
-      name: "Riftmaker",
-      note: "(if you need damage + long fights) — swap to more tank if behind",
-    });
-  }
-
-  // Ensure “core 6” stays exactly 6 items
-  const core6 = items.slice(0, 6);
+  const items = [
+    { name: "Dusk and Dawn", note: "Spellblade bruiser core; do not stack other Spellblade items." },
+    { name: boots },
+    { name: "Navori Flickerblade", note: "Ability uptime through attacks; requires access to a target." },
+    { name: tags.heavyAD && !topIsAP ? "Frozen Heart" : "Spirit Visage", note: "Adapt this resistance slot to the actual damage reaching you." },
+    { name: tags.healing || topIsHealing ? "Thornmail" : critThreat ? "Randuin's Omen" : aaThreat ? "Frozen Heart" : "Unending Despair" },
+    { name: "Jak'Sho, The Protean" },
+  ];
+  // Avoid duplicate Frozen Heart when both lane and composition select armor.
+  if (items[3].name === items[4].name) items[4] = { name: "Unending Despair" };
+  const core6 = items;
 
   const fightRule =
     topIsRanged || tags.rangedTop
@@ -205,23 +160,23 @@ const startLine =
     itemsOrdered: core6,
     fightRule,
     bans: ["Teemo", "Urgot", "Dr. Mundo", "Kennen", "Vayne"],
-    // Keep old fields populated (still useful if you ever want expandable details)
+    // Full details are available in the recommendation card.
     runes: [
-      topIsRanged || tags.rangedTop
-        ? "Runes: Resolve (Grasp) + Second Wind + Unflinching"
-        : "Runes: Precision (PTA) or Resolve (Grasp) depending on matchup",
-      "Secondary: Precision (Triumph/Last Stand) or Sorcery for scaling",
+      "Precision: Lethal Tempo / Triumph / Legend: Haste / Last Stand",
+      topIsRanged ? "Resolve: Second Wind / Revitalize" : "Resolve: Demolish / Revitalize",
+      "Shards: Attack Speed / Adaptive Force / Scaling Health",
     ],
+
     skillOrder: "Skill order: W > Q > E (take R whenever available).",
     starter: [startLine.replace("START: ", ""), "Summoners: Flash + Teleport (usually)"],
     coreItems: core6.map((x) => x.note ? `${x.name} ${x.note}` : x.name),
     situational: [
-      "If lane has heavy healing: Bramble early (complete Thornmail later).",
-      "If enemy comp has key CC chain: Mercs earlier + play around E zone.",
+      "Bramble/Thornmail anti-heal requires the enemy to attack you; it will not reliably debuff a healer standing behind them.",
+      "Mercury’s Treads help versus reducible CC and magic damage; they do not shorten knockups or suppression. Play around your E zone.",
       "If you’re ahead and need damage: Riftmaker earlier can snowball.",
     ],
     notes: [
-      "Tear early matters — it smooths mana/haste and makes your midgame fights feel much better.",
+      "Tear is not mandatory for this build. Buy it only when deliberately choosing a Fimbulwinter tank alternative.",
       topIsRanged || tags.rangedTop ? "Vs ranged: patience wins — don’t bleed HP for CS." : "",
     ].filter(Boolean),
   };

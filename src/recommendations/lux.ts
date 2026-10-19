@@ -1,10 +1,8 @@
+import { hasAny } from "./shared";
 // src/recommendations/lux.ts
 import type { DraftTags } from "./tags";
-import type { ChampRec, OrderedItem } from "./masterYi";
+import type { ChampRec, OrderedItem } from "./types";
 
-function hasAny(list: string[], keys: string[]) {
-  return list.some((e) => keys.some((k) => e.includes(k)));
-}
 
 function classifyLane(bot: string[]) {
   const HOOK = ["thresh", "nautilus", "blitzcrank", "pyke"];
@@ -36,10 +34,7 @@ export function getLuxSupportRec(
   // --- RUNES ---
   const runeLine =
     "RUNES: Arcane Comet — Manaflow + Transcendence; Scorch for lane pressure";
-  const secondaryLine =
-    vsEngage || tags.heavyCCBurst
-      ? "SECONDARY: Inspiration (Biscuit + Cosmic) — survive lanes + spam windows"
-      : "SECONDARY: Inspiration (Biscuit + Cosmic) — standard Lux support";
+  const secondaryLine = "SECONDARY: Cheap Shot + Ultimate Hunter (Domination)";
 
   // --- START + LANE RULE ---
   const startLine = "START: World Atlas → upgrade support poke item (play for E poke + Q picks)";
@@ -81,32 +76,14 @@ export function getLuxSupportRec(
 
   const items: OrderedItem[] = [];
 
-  // Support item line
-  items.push({ name: "Zaz'Zak’s Realmspike", note: "(support poke upgrade)" });
+  items.push({ name: "Zaz'Zak's Realmspike", note: "World Atlas quest reward; reserve this inventory slot." });
+  items.push({ name: "Sorcerer's Shoes" });
+  items.push({ name: "Luden's Echo", note: "First purchased legendary; support income delays full builds." });
+  items.push({ name: needsStasis ? "Zhonya's Hourglass" : "Stormsurge" });
+  items.push({ name: tags.healing ? "Morellonomicon" : tags.tanky ? "Void Staff" : "Shadowflame", note: "Adapt to healing or observed MR; buy Oblivion Orb early only if you can apply it." });
+  items.push({ name: "Rabadon's Deathcap", note: "Luxury final slot. Keep space for Control Wards until an important completion." });
 
-  // Boots
-  items.push({ name: "Sorcerer’s Shoes", note: "(lane pressure / pick damage)" });
 
-  // Core AP support path
-  items.push({ name: "Imperial Mandate", note: "(Q/E slow + team follow-up damage)" });
-
-  if (needsStasis) {
-    items.push({ name: "Zhonya’s Hourglass", note: "← BUY HERE (divers/CC — survive focus)" });
-  } else {
-    items.push({ name: "Horizon Focus", note: "(pick damage amplification off Q/slow)" });
-  }
-
-  // Anti-heal / pen / utility
-  if (tags.healing) {
-    items.push({ name: "Morellonomicon", note: "(anti-heal — grab Oblivion Orb earlier if needed)" });
-  } else {
-    items.push({ name: "Rabadon’s Deathcap", note: "(if you’re snowballing/picking constantly)" });
-  }
-
-  items.push({
-    name: tags.tanky ? "Void Staff" : "Shadowflame",
-    note: tags.tanky ? "(if they build MR/frontline)" : "(best damage if low MR)",
-  });
 
   const core6 = items.slice(0, 6);
 
@@ -126,16 +103,16 @@ export function getLuxSupportRec(
 
     runes: [
       "Sorcery: Arcane Comet | Manaflow Band | Transcendence | Scorch",
-      "Secondary: Inspiration (Biscuit + Cosmic Insight)",
-      "Shards: Adaptive / Adaptive / Health",
+      "Domination: Cheap Shot / Ultimate Hunter",
+      "Shards: Adaptive Force / Adaptive Force / Scaling Health",
     ],
     skillOrder: "Skill order: E > Q > W (take R whenever available).",
-    starter: ["World Atlas", "2x Pots", "Summoners: Flash + (Ignite/Exhaust) depending on lane"],
+    starter: ["World Atlas", "2x Pots", "Flash + Heal; Exhaust against divers or Ignite for lane pressure"],
     coreItems: core6.map((x) => (x.note ? `${x.name} ${x.note}` : x.name)),
     situational: [
       "If they hard-dive: Zhonya earlier (even 2nd/3rd) + play tighter to your team.",
-      "If your comp needs picks: prioritize Mandate/Horizon-style damage amp.",
-      "If they stack MR: Void Staff earlier (4th/5th).",
+      "Damage build is the baseline. On support income, prioritize vision and useful components over saving for luxury AP.",
+      "If they stack MR, replace a damage slot with Void Staff; tank count does not prove MR purchases.",
     ],
     notes: [
       "Lux support wins by owning space with E and converting one Q into a pick → objective.",

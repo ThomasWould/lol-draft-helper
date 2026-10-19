@@ -1,10 +1,8 @@
 // src/recommendations/missFortune.ts
 import type { DraftTags } from "./tags";
-import type { ChampRec, OrderedItem } from "./masterYi";
+import type { ChampRec, OrderedItem } from "./types";
+import { hasAny, carryBoots, cleanseAdvice, withCleanse } from "./shared";
 
-function hasAny(list: string[], keys: string[]) {
-  return list.some((e) => keys.some((k) => e.includes(k)));
-}
 
 function classifySupport(bot: string[]) {
   const ENGAGE = ["leona", "nautilus", "thresh", "blitzcrank", "rell", "alistar", "rakan", "pyke"];
@@ -18,18 +16,7 @@ function classifySupport(bot: string[]) {
   return { isEngage, isPoke, isEnchant };
 }
 
-function pickBoots(tags: DraftTags, enemies: string[]) {
-  const HARD_CC = ["leona", "nautilus", "skarner", "malzahar", "lissandra", "vi", "ashe", "pantheon"];
-  if (tags.heavyCCBurst || hasAny(enemies, HARD_CC)) return "Mercury’s Treads";
-  if (tags.heavyAD) return "Plated Steelcaps";
-  return "Berserker’s Greaves";
-}
 
-function needsQSS(enemies: string[]) {
-  // MF: QSS is mostly for “I get point-clicked before/after R or I can’t DPS”
-  const QSS_THREATS = ["malzahar", "skarner", "warwick", "lissandra"];
-  return hasAny(enemies, QSS_THREATS);
-}
 
 export function getMissFortuneRec(
   tags: DraftTags,
@@ -39,13 +26,10 @@ export function getMissFortuneRec(
   const bot = enemyBot.slice(0, 2);
   const { isEngage, isPoke, isEnchant } = classifySupport(bot);
 
-  // --- RUNES (crit-leaning default) ---
-  // Common MF crit setups frequently use PTA for lane + midgame DPS;
-  // we keep it deterministic and “parity-level” with your other champs.
-  const runesLine = "RUNES: Press the Attack (crit/DPS) — lane wins off short trades + Q bounce";
-  const secondaryLine = isEngage || tags.heavyCCBurst
-    ? "SECONDARY: Inspiration (Biscuit + Cosmic) or Resolve (Second Wind) if lane is violent"
-    : "SECONDARY: Inspiration (Biscuit + Cosmic) for lane control";
+  const runesLine = isPoke
+    ? "RUNES: Press the Attack — sustained trading alternative when poke denies First Strike"
+    : "RUNES: First Strike / Cash Back / Biscuit Delivery / Jack of All Trades";
+  const secondaryLine = "SECONDARY: Manaflow Band + Gathering Storm; PTA alternative uses Inspiration.";
 
   // --- START + LANE RULE ---
   const starterLine =
@@ -53,7 +37,7 @@ export function getMissFortuneRec(
 
   const laneRule =
     isEngage
-      ? "LANE RULE: Don’t stand in hook/engage range — thin wave, hold Flash, punish missed engage with Q+AA+E"
+      ? "LANE RULE: Don’t stand in hook/engage range — thin wave, hold Flash, punish missed engage with AA+Q; use E only when its slow adds value"
       : isEnchant
         ? "LANE RULE: Trade often before they out-sustain — Q bounce poke + wave control into plate windows"
         : "LANE RULE: Slow push → crash → reset (you want wave control for clean Q bounces + E zones)";
@@ -65,7 +49,7 @@ export function getMissFortuneRec(
       ...(isEngage
         ? [
             "Levels 1–3: don’t perma-push into hook angles; keep wave near your side so engages are risky for them.",
-            "If they miss key engage: immediately step up for PTA trade and chunk them under your minion wave.",
+            "If they miss key engage: immediately step up for short trade and chunk them under your minion wave.",
             "Crash a cannon wave only when you have vision/HP—otherwise keep the lane short and safe.",
           ]
         : isPoke
@@ -82,42 +66,13 @@ export function getMissFortuneRec(
     ],
   };
 
-  // --- ITEMS (crit build, ordered, with BUY HERE tech) ---
-  const boots = pickBoots(tags, enemies);
-
-  const items: OrderedItem[] = [];
-
-  // MF crit core (deterministic, “champ select readable”)
-  items.push({ name: "The Collector", note: "(snowball + execute for R cleanups)" });
-  items.push({ name: boots });
-  items.push({ name: "Infinity Edge", note: "(crit spike — R + autos hurt)" });
-
-  // BUY HERE: QSS timing if suppression/lockdown exists
-  if (needsQSS(enemies)) {
-    items.splice(3, 0, { name: "QSS", note: "← BUY HERE (point/click suppression/lockdown)" });
-  }
-
-  // Armor pen / anti-frontline slot
-  if (tags.tanky || tags.heavyAD) {
-    items.push({ name: "Lord Dominik’s Regards", note: "(vs frontline / armor)" });
-  } else {
-    items.push({ name: "Lord Dominik’s Regards", note: "(best default 3–4 item damage curve)" });
-  }
-
-  // Sustain / safety slot
-  items.push({
-    name: "Bloodthirster",
-    note: isPoke ? "(stabilize vs poke; keep HP for fights)" : "(shield lets you hold R angles)",
-  });
-
-  // Final slot: anti-heal or range/utility
-  if (tags.healing) {
-    items.push({ name: "Mortal Reminder", note: "(anti-heal — finish later; consider early Executioner’s)" });
-  } else {
-    items.push({ name: "Rapid Firecannon", note: "(safer autos to start fights / tag PTA)" });
-  }
-
-  const core6 = items.slice(0, 6);
+  const base: OrderedItem[] = [
+    { name: "Hubris" }, { name: carryBoots(tags, 'Boots of Swiftness') },
+    { name: "The Collector" }, { name: "Infinity Edge" },
+    { name: tags.healing ? "Mortal Reminder" : "Lord Dominik's Regards", note: "One Last Whisper upgrade only; swap to Mortal Reminder when anti-heal is needed." },
+    { name: isPoke ? "Bloodthirster" : "Rapid Firecannon" },
+  ];
+  const core6 = withCleanse(base, enemies);
 
   // --- BANS + FIGHT RULE ---
   const bans = ["Leona", "Nautilus", "Rammus", "Malphite", "Zac"];
@@ -136,15 +91,16 @@ export function getMissFortuneRec(
 
     // keep long fields populated (optional future expand)
     runes: [
-      "Precision: Press the Attack | Presence of Mind | Legend: Bloodline/Alacrity | Coup de Grace",
-      "Secondary: Inspiration (Biscuit + Cosmic) or Resolve (Second Wind) into hard lanes",
-      "Shards: AS / Adaptive / (Armor or MR)",
+      isPoke ? "Precision: Press the Attack / Presence of Mind / Legend: Bloodline / Coup de Grace" : "Inspiration: First Strike / Cash Back / Biscuit Delivery / Jack of All Trades",
+      isPoke ? "Inspiration: Biscuit Delivery / Cosmic Insight" : "Sorcery: Manaflow Band / Gathering Storm",
+      "Shards: Adaptive Force / Adaptive Force / Health",
     ],
+
     skillOrder: "Skill order: Q > W > E (take R whenever available).",
-    starter: [starterLine.replace("START: ", ""), "Summoners: Flash + Heal (or Cleanse vs hard CC)"],
+    starter: [starterLine.replace("START: ", ""), "Flash + Barrier; Cleanse against removable CC (not suppression)"],
     coreItems: core6.map((x) => (x.note ? `${x.name} ${x.note}` : x.name)),
     situational: [
-      "If they have hard engage + you’re the wincon: early Stopwatch can save key midgame fights.",
+      cleanseAdvice,
       "If healing is high: Executioner’s early; complete Mortal later.",
       "If you can’t channel R safely: play more auto-focused and use R as follow-up only.",
     ],

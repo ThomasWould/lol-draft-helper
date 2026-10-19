@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 
-const version = '13.1.1';
+const version = '16.20.1';
 const championData = {
   data: {
     Volibear: {
@@ -142,8 +142,8 @@ test('master yi detects tanky CC comp and shows master yi recommendations', asyn
 
   await expect(page.getByText(/Detected:/)).toBeVisible();
   await expect(page.getByText('2+ tanks', { exact: true })).toBeVisible();
-  await expect(page.getByText('burst + CC', { exact: true })).toBeVisible();
-  await expect(page.getByText(/Lethal Tempo/i)).toBeVisible();
+  await expect(page.getByText('heavy CC', { exact: true })).toBeVisible();
+  await expect(page.locator('.recLines').getByText(/Lethal Tempo/i)).toBeVisible();
   await expect(page.getByText('FIGHT RULE:', { exact: true })).toBeVisible();
 });
 

@@ -6,228 +6,172 @@ import type { DDragonChampion } from "./api/ddragon";
 
 // recommendations + tags
 import { getDraftTagsFromTraits, tagsToPills } from "./recommendations/tags";
-import { getMasterYiRec, type ChampRec } from "./recommendations/masterYi";
+import { getMasterYiRec } from "./recommendations/masterYi";
+import type { ChampRec } from "./recommendations/types";
+import {
+  CHAMPIONS,
+  META,
+  matchesReviewedPatch,
+  type ChampionKey,
+} from "./recommendations/meta";
+import {
+  normalizeLoose,
+  splitTokens,
+  resolveChampions,
+  removeEnemy,
+} from "./draft";
 import { getVolibearRec } from "./recommendations/volibear";
 
-// ✅ NEW: add these imports
 import { getBelvethRec } from "./recommendations/belveth";
 import { getHeimerdingerRec } from "./recommendations/heimerdinger";
 import { getMissFortuneRec } from "./recommendations/missFortune";
 import { getLuxSupportRec } from "./recommendations/lux";
 
+import { GameIcon } from "./components/GameIcon";
+import { Icon } from "./components/Icon";
+import itemIcons from "./data/item-icons.json";
 import { EnemyScout } from "./components/EnemyScout";
 import { CoachChat } from "./components/CoachChat";
 import type { CoachContext } from "./coach/types";
 
-// ✅ NEW: expand ChampionKey
-type ChampionKey =
-  | "masteryi"
-  | "belveth"
-  | "volibear"
-  | "heimerdinger"
-  | "missfortune"
-  | "lux";
+const ITEM_ICONS = new Map(
+  Object.entries(itemIcons).map(([name, image]) => [
+    normalizeLoose(name),
+    image,
+  ]),
+);
 
-// ✅ NEW: add champs to CHAMPIONS
-const CHAMPIONS: { key: ChampionKey; label: string; role: "Jungle" | "Top" | "ADC" | "Support" }[] = [
-  { key: "masteryi", label: "Master Yi", role: "Jungle" },
-  { key: "belveth", label: "Bel'Veth", role: "Jungle" },
-  { key: "volibear", label: "Volibear", role: "Top" },
-  { key: "heimerdinger", label: "Heimerdinger", role: "Top" },
-  { key: "missfortune", label: "Miss Fortune", role: "ADC" },
-  { key: "lux", label: "Lux", role: "Support" },
-];
-
-const CHAMP_META = {
-  masteryi: { label: "Master Yi", role: "Jungle" },
-  belveth: { label: "Bel'Veth", role: "Jungle" },
-  volibear: { label: "Volibear", role: "Top" },
-  heimerdinger: { label: "Heimerdinger", role: "Top" },
-  missfortune: { label: "Miss Fortune", role: "ADC" },
-  lux: { label: "Lux", role: "Support" },
-} as const;
-
-// ✅ NEW helper: top picks = Voli + Heimer
 function isTopPick(k: ChampionKey) {
-  return k === "volibear" || k === "heimerdinger";
+  return CHAMPIONS[k].role === "Top";
 }
-
 function isBotPick(k: ChampionKey) {
-  return k === "missfortune" || k === "lux";
+  return ["ADC", "Support"].includes(CHAMPIONS[k].role);
 }
-
-function normalizeLoose(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function splitTokens(raw: string): string[] {
-  return raw
-    .split(/,|\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function resolveChampions(tokens: string[], championList: DDragonChampion[]) {
-  const byNormName = new Map<string, DDragonChampion>();
-  const byNormId = new Map<string, DDragonChampion>();
-
-  for (const c of championList) {
-    byNormName.set(normalizeLoose(c.name), c);
-    byNormId.set(normalizeLoose(c.id), c);
-  }
-
-  const matched: DDragonChampion[] = [];
-  const unmatched: string[] = [];
-
-  for (const t of tokens) {
-    const key = normalizeLoose(t);
-    const found = byNormName.get(key) || byNormId.get(key);
-    if (found) matched.push(found);
-    else unmatched.push(t);
-  }
-
-  // de-dupe while preserving order
-  const seen = new Set<string>();
-  const deduped = matched.filter((c) => {
-    if (seen.has(c.id)) return false;
-    seen.add(c.id);
-    return true;
-  });
-
-  return { matched: deduped, unmatched };
-}
-
 function championIconUrl(version: string, champ: DDragonChampion) {
   return `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champ.image.full}`;
 }
 
-// Remove one champ occurrence from the raw input
-function removeEnemy(champName: string, raw: string) {
-  const toks = splitTokens(raw);
-  const target = normalizeLoose(champName);
-  const idx = toks.findIndex((t) => normalizeLoose(t) === target);
-  if (idx === -1) return raw;
-  toks.splice(idx, 1);
-  return toks.join(", ");
-}
-
 export default function App() {
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
+    "idle",
+  );
   const [selected, setSelected] = useState<ChampionKey>("masteryi");
   const [enemyRaw, setEnemyRaw] = useState("");
   const [enemyTopRaw, setEnemyTopRaw] = useState(""); // optional for TOP champs
   const [enemyBotRaw, setEnemyBotRaw] = useState(""); // optional for BOT champs (2 champs)
 
   function clearAllEnemyInputs() {
-  setEnemyRaw("");
-  setEnemyTopRaw("");
-  setEnemyBotRaw("");
-}
-
+    setEnemyRaw("");
+    setEnemyTopRaw("");
+    setEnemyBotRaw("");
+  }
 
   const { loading, error, version, championList } = useChampionData();
 
   const tokens = useMemo(() => splitTokens(enemyRaw), [enemyRaw]);
   const { matched, unmatched } = useMemo(
     () => resolveChampions(tokens, championList),
-    [tokens, championList]
+    [tokens, championList],
   );
 
   // resolve enemy top textbox into a champion (for Top picks)
   const topTokens = useMemo(() => splitTokens(enemyTopRaw), [enemyTopRaw]);
-  const { matched: topMatched } = useMemo(
+  const { matched: topMatched, unmatched: topUnmatched } = useMemo(
     () => resolveChampions(topTokens, championList),
-    [topTokens, championList]
+    [topTokens, championList],
   );
-
-  const enemyNamesNormalized = useMemo(
-    () => matched.map((c) => normalizeLoose(c.name)),
-    [matched]
-  );
-
-  const enemyTopNormalized = useMemo(() => normalizeLoose(enemyTopRaw), [enemyTopRaw]);
-  const hasEnemyTeam = matched.length > 0;
-  const hasEnemyTop = enemyTopNormalized.length > 0;
 
   const botTokens = useMemo(() => splitTokens(enemyBotRaw), [enemyBotRaw]);
-  const { matched: botMatched } = useMemo(
+  const { matched: botMatched, unmatched: botUnmatched } = useMemo(
     () => resolveChampions(botTokens, championList),
-    [botTokens, championList]
+    [botTokens, championList],
   );
-
-  // normalized: first 2 champs only
-  const enemyBotNormalized = useMemo(() => {
-    return botMatched.slice(0, 2).map((c) => normalizeLoose(c.name));
-  }, [botMatched]);
-
-  const hasEnemyBot = enemyBotNormalized.length > 0;
-
-
-  // ✅ NEW: show recs if team exists OR top input exists for top picks
-  const shouldShowRecs =
-  hasEnemyTeam ||
-  (isTopPick(selected) && hasEnemyTop) ||
-  (isBotPick(selected) && hasEnemyBot);
-
-  // ✅ NEW: Scout targets = enemy team + (if TOP pick) enemy top champ even if no team entered
-  const scoutChamps = useMemo(() => {
-  const base = [...matched];
-    if (isTopPick(selected) && topMatched.length > 0) {
-      const top = topMatched[0];
-      if (!base.some((c) => c.id === top.id)) base.unshift(top);
-    }
-
-    if (isBotPick(selected) && botMatched.length > 0) {
-      // include up to 2 bot champs (prepend, preserve uniqueness)
-      for (const c of botMatched.slice(0, 2).reverse()) {
-        if (!base.some((x) => x.id === c.id)) base.unshift(c);
-      }
-    }
-
-    return base;
-  }, [matched, selected, topMatched, botMatched]);
-
-
-  // tags + pills from your tag engine
-  const tags = useMemo(() => {
-    return getDraftTagsFromTraits(
-      enemyNamesNormalized,
-      championList,
-      enemyTopNormalized || undefined
+  const activeTop = isTopPick(selected) ? topMatched[0] : undefined;
+  const enemyTopNormalized = activeTop ? normalizeLoose(activeTop.name) : "";
+  const enemyBotNormalized = useMemo(
+    () =>
+      isBotPick(selected)
+        ? botMatched.slice(0, 2).map((c) => normalizeLoose(c.name))
+        : [],
+    [selected, botMatched],
+  );
+  const allEnemies = useMemo(() => {
+    const lane = isTopPick(selected)
+      ? topMatched.slice(0, 1)
+      : isBotPick(selected)
+        ? botMatched.slice(0, 2)
+        : [];
+    return [...lane, ...matched].filter(
+      (c, i, all) => all.findIndex((x) => x.id === c.id) === i,
     );
-  }, [enemyNamesNormalized, enemyTopNormalized, championList]);
+  }, [selected, topMatched, botMatched, matched]);
+  const scoutChamps = useMemo(() => allEnemies.slice(0, 5), [allEnemies]);
+  const enemyNamesNormalized = useMemo(
+    () => scoutChamps.map((c) => normalizeLoose(c.name)),
+    [scoutChamps],
+  );
+  const shouldShowRecs = scoutChamps.length > 0;
+  const tags = useMemo(
+    () =>
+      getDraftTagsFromTraits(
+        enemyNamesNormalized,
+        championList,
+        enemyTopNormalized || undefined,
+      ),
+    [enemyNamesNormalized, championList, enemyTopNormalized],
+  );
 
   const tagPills = useMemo(() => tagsToPills(tags), [tags]);
 
-  // ✅ NEW: unified recommendations (4 champs)
   const rec: ChampRec = useMemo(() => {
-    if (selected === "masteryi") return getMasterYiRec(tags, enemyNamesNormalized);
-    if (selected === "belveth") return getBelvethRec(tags, enemyNamesNormalized);
+    if (selected === "masteryi")
+      return getMasterYiRec(tags, enemyNamesNormalized);
+    if (selected === "belveth")
+      return getBelvethRec(tags, enemyNamesNormalized);
     if (selected === "volibear")
-      return getVolibearRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
+      return getVolibearRec(
+        tags,
+        enemyNamesNormalized,
+        enemyTopNormalized || undefined,
+      );
     if (selected === "heimerdinger")
-      return getHeimerdingerRec(tags, enemyNamesNormalized, enemyTopNormalized || undefined);
+      return getHeimerdingerRec(
+        tags,
+        enemyNamesNormalized,
+        enemyTopNormalized || undefined,
+      );
 
     if (selected === "missfortune")
       return getMissFortuneRec(tags, enemyNamesNormalized, enemyBotNormalized);
 
     return getLuxSupportRec(tags, enemyNamesNormalized, enemyBotNormalized);
-  }, [selected, tags, enemyNamesNormalized, enemyTopNormalized, enemyBotNormalized]);
-
+  }, [
+    selected,
+    tags,
+    enemyNamesNormalized,
+    enemyTopNormalized,
+    enemyBotNormalized,
+  ]);
 
   const coachContext: CoachContext = useMemo(() => {
-    // ✅ NEW: champMeta for 4 champs
-    const champMeta = CHAMP_META[selected];
+    const champMeta = CHAMPIONS[selected];
 
     return {
       championKey: selected,
       championLabel: champMeta.label,
       role: champMeta.role,
 
-      enemyTeam: matched.map((c) => c.name),
+      enemyTeam: scoutChamps.map((c) => c.name),
+      patch: META.patch,
+      reviewedAt: META.reviewedAt,
 
-      // keep top optional; for junglers it can still show (harmless)
-      enemyTop: enemyTopRaw.trim() || undefined,
-      enemyBot: enemyBotRaw.trim() || undefined,
+      enemyTop: activeTop?.name,
+      enemyBot: isBotPick(selected)
+        ? botMatched
+            .slice(0, 2)
+            .map((c) => c.name)
+            .join(", ") || undefined
+        : undefined,
 
       detected: {
         tanks: tags.counts.tanks ?? 0,
@@ -243,331 +187,589 @@ export default function App() {
         headlineLines: rec.headlineLines ?? [],
         itemsOrdered: rec.itemsOrdered ?? [],
         fightRule: rec.fightRule,
+        runes: rec.runes,
+        skillOrder: rec.skillOrder,
+        starter: rec.starter,
       },
     };
-  }, [selected, matched, enemyTopRaw, tags, tagPills, rec]);
+  }, [selected, scoutChamps, activeTop, botMatched, tags, tagPills, rec]);
+
+  const champion = CHAMPIONS[selected];
+  const selectedData = championList.find(
+    (c) => normalizeLoose(c.name) === selected,
+  );
+  const iconVersion = META.dataVersion;
+
+  async function copyBuild() {
+    try {
+      await navigator.clipboard.writeText(
+        [
+          `${champion.label} · ${champion.role} · Patch ${META.patch}`,
+          ...rec.headlineLines,
+          ...rec.itemsOrdered.map(
+            (item, index) =>
+              `${index + 1}. ${item.name}${item.note ? ` — ${item.note}` : ""}`,
+          ),
+          rec.fightRule,
+        ].join("\n"),
+      );
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+    window.setTimeout(() => setCopyState("idle"), 2400);
+  }
 
   return (
     <div className="page">
-      <header className="header">
-        <div className="headerLeft">
-          <div className="headerTextBlock">
-            <h1>LoL Draft Helper</h1>
-
-            <p className="sub">
-              Fast draft notes for <b>Master Yi / Bel'Veth (Jungle)</b> and{" "}
-              <b>Volibear / Heimerdinger (Top)</b>.
-            </p>
-
-            <p className="muted small headerTip">
-              Tip: bookmark this page so you can open it during champ select.
-            </p>
-          </div>
-
+      <header className="topbar">
+        <a className="brand" href="#main">
+          <span className="brandMark">
+            <Icon name="spark" />
+          </span>{" "}
+          DRAFTROOM <span className="brandDivider" />{" "}
+          <span className="brandSub">LEAGUE OF LEGENDS</span>
+        </a>
+        <div className="topbarLinks">
           <a
-            className="link"
+            className="patchBadge"
+            href={META.patchUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span className="statusDot" /> PATCH {META.patch}
+          </a>
+          <a
+            className="githubLink"
             href="https://github.com/ThomasWould/lol-draft-helper"
             target="_blank"
             rel="noreferrer"
           >
-            GitHub
+            GitHub <Icon name="external" />
           </a>
         </div>
       </header>
 
+      <main id="main">
+        <section className="intro">
+          <div>
+            <div className="eyebrow">A LITTLE PREPARATION. A BETTER GAME.</div>
+            <h1>
+              LoL Draft Helper<span className="titleDot">.</span>
+            </h1>
+            <p>Read the draft. Find your edge. Enter the Rift with a plan.</p>
+          </div>
+          <div className="introMeta">
+            <Icon name="shield" />
+            <span>
+              Six champions. One clear plan.
+              <small>Reviewed {META.reviewedAt} · Emerald+</small>
+            </span>
+          </div>
+        </section>
 
-      <div className="grid">
-        {/* LEFT: Inputs */}
-        <div className="card inputsCard">
-          <div className="row">
-            <label className="label">Pick your champion</label>
+        <div className="workspace">
+          <section className="card inputsCard" aria-label="Draft setup">
+            <div className="sectionHeading">
+              <div className="eyebrow">
+                <span className="stepNumber">01</span> YOUR DRAFT
+              </div>
+              <span className="liveLabel">
+                <span className="statusDot" /> Auto-updating
+              </span>
+            </div>
+            <div className="pickIdentity">
+              <GameIcon
+                className="pickPortrait"
+                label={champion.label}
+                src={selectedData && championIconUrl(iconVersion, selectedData)}
+              />
+              <div>
+                <span className="roleLabel">{champion.role}</span>
+                <h2>{champion.label}</h2>
+                <span className="muted small">
+                  Your champion, your win condition.
+                </span>
+              </div>
+            </div>
+            <label className="label" htmlFor="champion-select">
+              Pick your champion
+            </label>
             <select
+              id="champion-select"
               className="champSelect"
               value={selected}
-              onChange={(e) => setSelected(e.target.value as ChampionKey)}
+              onChange={(e) => {
+                setSelected(e.target.value as ChampionKey);
+                setCopyState("idle");
+              }}
             >
               {(["Jungle", "Top", "ADC", "Support"] as const).map((role) => (
                 <optgroup key={role} label={role}>
-                  {CHAMPIONS.filter((c) => c.role === role).map((c) => (
-                    <option key={c.key} value={c.key}>
-                      {c.label}
-                    </option>
-                  ))}
+                  {Object.entries(CHAMPIONS)
+                    .filter(([, c]) => c.role === role)
+                    .map(([key, c]) => (
+                      <option key={key} value={key}>
+                        {c.label}
+                      </option>
+                    ))}
                 </optgroup>
               ))}
             </select>
-          </div>
 
-          <div className="row">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-              <label className="label" style={{ marginBottom: 0 }}>
-                Enemy team (comma or newline separated)
+            <div className="inputDivider" />
+            <div className="enemyHeader">
+              <label className="label" htmlFor="enemy-team">
+                Enemy team
               </label>
-
               <button
-                type="button"
                 className="clearBtn"
+                type="button"
                 onClick={clearAllEnemyInputs}
-                disabled={!enemyRaw.trim() && !enemyTopRaw.trim()}
-                title="Clear enemy team + top matchup"
+                disabled={
+                  !enemyRaw.trim() && !enemyTopRaw.trim() && !enemyBotRaw.trim()
+                }
               >
                 Clear all
               </button>
             </div>
-
-
-            {loading && <div className="muted small">Loading champion data…</div>}
-            {error && <div className="muted small">Couldn’t load Data Dragon: {error}</div>}
-
+            <p className="fieldHelp">
+              Add names separated by commas or new lines.
+            </p>
             <ChampionTextarea
+              id="enemy-team"
               value={enemyRaw}
               onChange={setEnemyRaw}
               championList={championList}
-              disabled={loading || !!error}
+              disabled={championList.length === 0}
               ariaLabel="Enemy team"
+              rows={3}
             />
-
-            <div className="hint">
-              Parsed: {tokens.length ? tokens.join(", ") : <span className="muted">none</span>}
+            {loading && (
+              <div className="dataStatus" role="status">
+                Loading champion data…
+              </div>
+            )}
+            {error && (
+              <div className="notice">Champion data notice: {error}</div>
+            )}
+            {unmatched.length > 0 && (
+              <p className="notice">Not recognized: {unmatched.join(", ")}</p>
+            )}
+            <div className="rosterHeader">
+              <span className="label">OPPONENTS</span>
+              <span>
+                {scoutChamps.length}
+                <span className="muted"> / 5</span>
+              </span>
             </div>
-
-            {version && matched.length > 0 && (
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+            <div
+              className="enemySlots"
+              aria-label={`${scoutChamps.length} of 5 enemies entered`}
+            >
+              {Array.from({ length: 5 }, (_, i) => (
+                <div
+                  className={`enemySlot ${scoutChamps[i] ? "filled" : ""}`}
+                  key={i}
+                >
+                  {scoutChamps[i] ? (
+                    <GameIcon
+                      label={scoutChamps[i].name}
+                      src={championIconUrl(iconVersion, scoutChamps[i])}
+                    />
+                  ) : (
+                    <Icon name="shield" />
+                  )}
+                  <span>{scoutChamps[i]?.name ?? "Unknown"}</span>
+                </div>
+              ))}
+            </div>
+            {matched.length > 0 && (
+              <div className="chipRow">
                 {matched.map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     className="chip"
-                    title="Click to remove"
-                    onClick={() => setEnemyRaw((prev) => removeEnemy(c.name, prev))}
+                    aria-label={`Remove ${c.name}`}
+                    title={`Remove ${c.name}`}
+                    onClick={() => setEnemyRaw((prev) => removeEnemy(c, prev))}
                   >
-                    <img
-                      src={championIconUrl(version, c)}
-                      alt={c.name}
-                      width={22}
-                      height={22}
-                      style={{ borderRadius: 6 }}
-                    />
-                    <span style={{ fontSize: 13 }}>{c.name}</span>
-                    <span className="chipX">×</span>
+                    {c.name}
+                    <Icon name="close" />
                   </button>
                 ))}
               </div>
             )}
-
-            {unmatched.length > 0 && (
-              <div className="muted small" style={{ marginTop: 8 }}>
-                Not recognized: {unmatched.join(", ")}
-              </div>
+            {(allEnemies.length > 5 ||
+              (isTopPick(selected) && topMatched.length > 1) ||
+              (isBotPick(selected) && botMatched.length > 2)) && (
+              <p role="status" className="notice">
+                A draft has five enemies. Using the first lane matchup (one top
+                or two bot) and up to five unique enemies total.
+              </p>
             )}
-
-            {matched.length > 0 && (
-              <div className="hint" style={{ marginTop: 10 }}>
-                <b>Detected:</b>{" "}
-                <span className="detRow">
-                  {tags.counts.tanks ? (
-                    <span className="detTag detTank">
-                      {tags.counts.tanks} tank{tags.counts.tanks === 1 ? "" : "s"}
-                    </span>
-                  ) : null}
-
-                  {tags.counts.ccBurst ? (
-                    <span className="detTag detCC">{tags.counts.ccBurst} burst/CC</span>
-                  ) : null}
-
-                  {tags.counts.ap ? (
-                    <span className="detTag detAP">{tags.counts.ap} AP</span>
-                  ) : null}
-
-                  {tags.counts.ad ? (
-                    <span className="detTag detAD">{tags.counts.ad} AD</span>
-                  ) : null}
-
-                  {tags.counts.flex ? (
-                    <span className="detTag detFlex">{tags.counts.flex} flex (AD/AP)</span>
-                  ) : null}
-
-                  {tags.counts.healing ? (
-                    <span className="detTag detHeal">{tags.counts.healing} healing</span>
-                  ) : null}
-
-                  {tags.rangedTop ? (
-                    <span className="detTag detRanged">ranged top</span>
-                  ) : null}
-                </span>
-              </div>
-            )}
-
-
-            {/* ✅ NEW: Jungle champs show scout here */}
-            {!isTopPick(selected) && scoutChamps.length > 0 && (
-              <EnemyScout selected={selected} enemies={scoutChamps} />
-            )}
-
-            {/* ✅ NEW: Optional enemy top (for TOP champs: Voli + Heimer) */}
             {isTopPick(selected) && (
-              <div style={{ marginTop: 14 }}>
-                <label className="label">Enemy top (optional — improves top-lane advice)</label>
+              <div className="laneInput">
+                <label className="label" htmlFor="enemy-top">
+                  Enemy top (optional)
+                </label>
+                <p className="fieldHelp">Fine-tune your lane and wave plan.</p>
                 <ChampionTextarea
+                  id="enemy-top"
                   value={enemyTopRaw}
                   onChange={setEnemyTopRaw}
                   championList={championList}
-                  disabled={loading || !!error}
+                  disabled={!championList.length}
                   ariaLabel="Enemy top"
+                  placeholder="e.g. Teemo"
+                  rows={1}
                 />
-                <div className="hint">
-                  Tip: put the likely enemy top laner here (e.g., Teemo, Quinn, Gnar). Helps matchup branching.
-                </div>
               </div>
             )}
-
-            {/* ✅ NEW: Optional enemy bot lane (for BOT champs: MF + Lux) */}
             {isBotPick(selected) && (
-              <div style={{ marginTop: 14 }}>
-                <label className="label">Enemy bot lane (optional — 2 champs improves lane + wave advice)</label>
+              <div className="laneInput">
+                <label className="label" htmlFor="enemy-bot">
+                  Enemy bot lane (optional)
+                </label>
+                <p className="fieldHelp">Add the enemy ADC and support.</p>
                 <ChampionTextarea
+                  id="enemy-bot"
                   value={enemyBotRaw}
                   onChange={setEnemyBotRaw}
                   championList={championList}
-                  disabled={loading || !!error}
+                  disabled={!championList.length}
                   ariaLabel="Enemy bot lane"
+                  placeholder="e.g. Jinx, Leona"
+                  rows={1}
                 />
-                <div className="hint">
-                  Tip: put the enemy <b>ADC + Support</b> here (e.g., Jinx, Leona). Used for lane + wave branching.
-                </div>
               </div>
             )}
-
-            {/* ✅ NEW: Top champs show scout AFTER top input */}
-            {isTopPick(selected) && scoutChamps.length > 0 && (
-              <div style={{ marginTop: 12 }}>
+            {((isTopPick(selected) && topUnmatched.length > 0) ||
+              (isBotPick(selected) && botUnmatched.length > 0)) && (
+              <p role="status" className="notice">
+                Lane not recognized:{" "}
+                {(isTopPick(selected) ? topUnmatched : botUnmatched).join(", ")}
+              </p>
+            )}
+            {scoutChamps.length > 0 ? (
+              <div className="detected">
+                <div className="label">Detected:</div>
+                <div className="detRow">
+                  {tags.counts.tanks > 0 && (
+                    <span className="detTag detTank">
+                      {tags.counts.tanks} tank
+                      {tags.counts.tanks === 1 ? "" : "s"}
+                    </span>
+                  )}
+                  {tags.counts.ccBurst > 0 && (
+                    <span className="detTag detCC">
+                      {tags.counts.ccBurst} hard CC
+                    </span>
+                  )}
+                  {tags.counts.ap > 0 && (
+                    <span className="detTag detAP">{tags.counts.ap} AP</span>
+                  )}
+                  {tags.counts.ad > 0 && (
+                    <span className="detTag detAD">{tags.counts.ad} AD</span>
+                  )}
+                  {tags.counts.flex > 0 && (
+                    <span className="detTag detFlex">
+                      {tags.counts.flex} flex (AD/AP)
+                    </span>
+                  )}
+                  {tags.counts.healing > 0 && (
+                    <span className="detTag detHeal">
+                      {tags.counts.healing} healing
+                    </span>
+                  )}
+                  {tags.rangedTop && (
+                    <span className="detTag detRanged">ranged top</span>
+                  )}
+                </div>
                 <EnemyScout selected={selected} enemies={scoutChamps} />
               </div>
+            ) : (
+              <button
+                className="exampleBtn"
+                type="button"
+                onClick={() => setEnemyRaw("Malphite, Vi, Lux, Jinx, Leona")}
+              >
+                Just exploring? Try an example <Icon name="arrow" />
+              </button>
             )}
-          </div>
-        </div>
+          </section>
 
-        {/* MIDDLE: Recommendations */}
-        <div className="card cardSticky cardGlow">
-          <h2>Recommendations</h2>
-
-          {rec.bans && rec.bans.length > 0 && (
-            <div style={{ marginTop: 10 }}>
-              <div className="label" style={{ marginBottom: 8 }}>
-                RECOMMENDED BANS:
-              </div>
-              <div className="pillRow" style={{ marginTop: 8 }}>
-                {rec.bans.map((b) => (
-                  <div key={b} className="pill">
-                    {b}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!shouldShowRecs ? (
-            <div className="emptyState">
-              <div className="emptyTitle">
-                {isTopPick(selected)
-                  ? "Start typing enemy champions (or just enemy top)"
-                  : "Start typing enemy champions"}
-              </div>
-              <div className="emptySub">
-                Add 1–5 champs on the left. We’ll auto-detect tanks, CC, AP/AD, healing, and update items/runes instantly.
-              </div>
-            </div>
-          ) : (
-            <>
-              {tagPills.length > 0 && (
-                <div className="pillRow" style={{ marginTop: 10 }}>
-                  {tagPills
-                    .filter((p) => p !== "ranged top")
-                    .map((p) => (
-                      <div key={p} className="pill">
-                        {p}
-                      </div>
-                    ))}
-                </div>
+          <section className="card planCard" aria-label="Your game plan">
+            <div className="championHero">
+              {selectedData && (
+                <img
+                  key={selectedData.id}
+                  className="heroArt"
+                  src={`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${selectedData.id}_0.jpg`}
+                  alt=""
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
               )}
-
-              <div className="recLines">
-                {rec.headlineLines.map((line) => {
-                  const idx = line.indexOf(":");
-                  const key = idx !== -1 ? line.slice(0, idx) : "NOTE";
-                  const val = idx !== -1 ? line.slice(idx + 1).trim() : line;
-                  return (
-                    <div key={line} className="recLine">
-                      <div className="recKey">{key}</div>
-                      <div className="recVal">{val}</div>
-                    </div>
-                  );
-                })}
-                
-                {(isTopPick(selected) || isBotPick(selected)) && rec.waveTips && (
-                  <div className="waveBox">
-                    <div className="waveHeader">
-                      <div className="waveKey">WAVE</div>
-                      <div className="waveTitle">{rec.waveTips.title}</div>
-                    </div>
-                    <ul className="waveList">
-                      {rec.waveTips.bullets.map((b) => (
-                        <li key={b}>{b}</li>
+              <div className="heroOrnament" aria-hidden="true">
+                <Icon name="compass" />
+              </div>
+              <div className="heroContent">
+                <div className="eyebrow">
+                  <span className="stepNumber">02</span> YOUR GAME PLAN
+                </div>
+                <div className="heroTitle">
+                  <h2>{champion.label}</h2>
+                  <span className="roleBadge">{champion.role}</span>
+                </div>
+                <p>Know your windows. Play to your strengths.</p>
+              </div>
+              <span className="heroCorner" aria-hidden="true" />
+            </div>
+            <div className="planBody">
+              <div className="planTopline">
+                <h2 className="planHeading">Recommendations</h2>
+                <span
+                  className={`draftStatus ${shouldShowRecs ? "ready" : ""}`}
+                >
+                  <span className="statusDot" />
+                  {shouldShowRecs ? "Draft adapted" : "Awaiting draft"}
+                </span>
+              </div>
+              <div className="planSource">
+                <span>PATCH {META.patch}</span>
+                <span className="sourceDivider">/</span>
+                <a
+                  href={CHAMPIONS[selected].source}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Build source <Icon name="external" />
+                </a>
+              </div>
+              {version && !matchesReviewedPatch(version) && (
+                <p role="status" className="notice">
+                  Champion data {version} differs from reviewed patch{" "}
+                  {META.patch}. Builds need a new review.
+                </p>
+              )}
+              {!shouldShowRecs ? (
+                <div className="emptyState">
+                  <span className="emptyEmblem">
+                    <Icon name="compass" />
+                  </span>
+                  <span className="eyebrow">THE ADVANTAGE STARTS HERE</span>
+                  <h3>A draft worth preparing for.</h3>
+                  <p>
+                    Add your opponents to reveal a tailored build,
+                    <br className="desktopBreak" /> rune setup, and a plan for
+                    the fights ahead.
+                  </p>
+                  <button
+                    className="goldButton"
+                    type="button"
+                    onClick={() => {
+                      setEnemyRaw("Malphite, Vi, Lux, Jinx, Leona");
+                    }}
+                  >
+                    Explore an example <Icon name="arrow" />
+                  </button>
+                  <div className="emptySteps">
+                    <span>01 · Add opponents</span>
+                    <span>02 · Read the draft</span>
+                    <span>03 · Find your edge</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {tagPills.length > 0 && (
+                    <div className="pillRow threatPills">
+                      {tagPills.map((pill) => (
+                        <span className="pill" key={pill}>
+                          {pill}
+                        </span>
                       ))}
-                    </ul>
+                    </div>
+                  )}
+                  <div className="recLines">
+                    {rec.headlineLines.map((line) => {
+                      const i = line.indexOf(":");
+                      const label = i < 0 ? "NOTE" : line.slice(0, i);
+                      return (
+                        <div className="recLine" key={line}>
+                          <div className="recKey">{label}</div>
+                          <div className="recVal">
+                            {i < 0 ? line : line.slice(i + 1).trim()}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
-
-              <div className="divider" />
-
-              <div style={{ marginTop: 14 }}>
-                <div className="label" style={{ marginBottom: 8 }}>
-                  ITEMS (IN ORDER):
-                </div>
-
-                <ul className="itemList">
-                  {rec.itemsOrdered.map((it, idx) => (
-                    <li key={`${it.name}-${idx}`} className="itemRow">
-                      <span className="itemNum">{idx + 1}</span>
-                      <span className="itemName">{it.name}</span>
-                      {it.note &&
-                        (it.note.includes("BUY HERE") ? (
-                          <span className="buyHere">{it.note}</span>
-                        ) : (
-                          <span className="itemNote">{it.note}</span>
+                  <div className="buildHeader">
+                    <div>
+                      <span className="eyebrow">THE RIGHT TOOLS</span>
+                      <h3>Build path</h3>
+                      <span className="label small">ITEMS (IN ORDER):</span>
+                    </div>
+                    <button
+                      className="copyButton"
+                      type="button"
+                      onClick={copyBuild}
+                      aria-label={
+                        copyState === "copied"
+                          ? "Copied!"
+                          : copyState === "error"
+                            ? "Copy unavailable"
+                            : "Copy build"
+                      }
+                    >
+                      <Icon name={copyState === "copied" ? "check" : "copy"} />
+                      <span role="status">
+                        {copyState === "copied"
+                          ? "Copied!"
+                          : copyState === "error"
+                            ? "Copy unavailable"
+                            : "Copy build"}
+                      </span>
+                    </button>
+                  </div>
+                  <ol className="itemList">
+                    {rec.itemsOrdered.map((item, i) => (
+                      <li className="itemRow" key={`${item.name}-${i}`}>
+                        <div className="itemVisual">
+                          <GameIcon
+                            className="itemIcon"
+                            label={item.name}
+                            src={
+                              ITEM_ICONS.get(normalizeLoose(item.name)) &&
+                              `https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/item/${ITEM_ICONS.get(normalizeLoose(item.name))}`
+                            }
+                          />
+                          <span className="itemNum">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                        </div>
+                        <div className="itemContent">
+                          <span className="itemName">{item.name}</span>
+                          {item.note && (
+                            <span className="itemNote">{item.note}</span>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                  {rec.fightRule && (
+                    <div className="fightRuleBox">
+                      <span className="fightIcon">
+                        <Icon name="target" />
+                      </span>
+                      <div>
+                        <div className="eyebrow">FIGHT RULE:</div>
+                        <p className="fightRuleText">
+                          {rec.fightRule.replace(/^FIGHT RULE:\s*/, "")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {rec.waveTips && (
+                    <details className="waveBox">
+                      <summary>
+                        <Icon name="compass" />
+                        <div>
+                          <span className="waveKey">WAVE</span>
+                          <span className="waveTitle">
+                            {rec.waveTips.title}
+                          </span>
+                        </div>
+                        <Icon name="chevron" />
+                      </summary>
+                      <ul className="waveList">
+                        {rec.waveTips.bullets.map((bullet) => (
+                          <li key={bullet}>{bullet}</li>
                         ))}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="divider" />
-
-              {rec.fightRule && (
-                <div style={{ marginTop: 14 }}>
-                  <div className="label" style={{ marginBottom: 8 }}>
-                    FIGHT RULE:
+                      </ul>
+                    </details>
+                  )}
+                  <details className="recDetails">
+                    <summary>
+                      <Icon name="book" />
+                      <span>Full runes, skills & situational advice</span>
+                      <Icon name="chevron" />
+                    </summary>
+                    <div className="detailsContent">
+                      <div className="label">Rune page</div>
+                      <ul>
+                        {rec.runes.map((line) => (
+                          <li key={line}>{line}</li>
+                        ))}
+                      </ul>
+                      <p>
+                        <b>Skills:</b> {rec.skillOrder}
+                      </p>
+                      <p>
+                        <b>Start & spells:</b> {rec.starter.join(" · ")}
+                      </p>
+                      <div className="label">Adapt as the game develops</div>
+                      <ul>
+                        {[...rec.situational, ...rec.notes].map((line) => (
+                          <li key={line}>{line}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </details>
+                </>
+              )}
+              {!!rec.bans?.length && (
+                <div className="banSection">
+                  <div>
+                    <Icon name="shield" />
+                    <span className="label">RECOMMENDED BANS:</span>
+                    <span className="muted small">Matchup options</span>
                   </div>
-
-                  <div className="fightRuleBox">
-                    <p className="fightRuleText">{rec.fightRule}</p>
+                  <div className="banRow">
+                    {rec.bans.map((ban) => {
+                      const data = championList.find(
+                        (c) => normalizeLoose(c.name) === normalizeLoose(ban),
+                      );
+                      return (
+                        <span className="banChip" key={ban}>
+                          <GameIcon
+                            label={ban}
+                            src={data && championIconUrl(iconVersion, data)}
+                          />
+                          {ban}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               )}
-
-              <p className="muted small" style={{ marginTop: 10 }}>
-                (Next: add “key threats” callout + better matchup branching.)
+              <p className="planFootnote">
+                Adapt this plan to actual items, lane
+                pressure, and the threats reaching you.
               </p>
-            </>
-          )}
-        </div>
+            </div>
+          </section>
 
-        {/* RIGHT: Coach (docked) */}
-        <div className="card cardSticky coachCard">
-          <CoachChat context={coachContext} mode="dock" />
+          <aside className="card coachCard" aria-label="Draft coach">
+            <CoachChat key={selected} context={coachContext} />
+          </aside>
         </div>
-      </div>
+      </main>
+      <footer className="footer">
+        <span className="footerBrand">
+          <Icon name="spark" /> BUILT FOR THE MOMENT BEFORE THE RIFT.
+        </span>
+        <span>
+          {META.scope} ·{" "}
+          <a href={META.patchUrl} target="_blank" rel="noreferrer">
+            Patch notes <Icon name="external" />
+          </a>
+        </span>
+        <p>Champion and item artwork © Riot Games.</p>
+      </footer>
     </div>
   );
 }

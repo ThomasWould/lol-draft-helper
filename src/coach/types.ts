@@ -1,8 +1,9 @@
 export type CoachContext = {
+  patch: string;
+  reviewedAt: string;
   championKey: "masteryi" | "belveth" | "volibear" | "heimerdinger"|"missfortune"|"lux";
   championLabel: "Master Yi" | "Bel'Veth" | "Volibear" | "Heimerdinger" | "Miss Fortune" | "Lux";
   role: "Jungle" | "Top" | "ADC" | "Support";
-  // rest same...
   enemyTeam: string[];
   enemyTop?: string;
   enemyBot?: string; // raw text "Jinx, Leona" (optional)
@@ -21,6 +22,9 @@ export type CoachContext = {
     headlineLines: string[];
     itemsOrdered: { name: string; note?: string }[];
     fightRule?: string;
+    runes: string[];
+    skillOrder: string;
+    starter: string[];
   };
 };
 

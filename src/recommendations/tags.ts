@@ -25,7 +25,7 @@ function norm(s: string) {
 }
 
 /**
- * NEW: tag enemies based on champion traits map (full roster coverage).
+ * Infer draft traits from the roster and curated overrides. Actual builds may differ.
  */
 export function getDraftTagsFromTraits(
   enemies: string[],
@@ -34,7 +34,7 @@ export function getDraftTagsFromTraits(
 ): DraftTags {
   const traitsMap = buildChampionTraitsMap(championList);
 
-  const enemyIds = enemies.map(norm);
+  const enemyIds = [...new Set(enemies.map(norm))];
 
   let tanks = 0;
   let ccBurst = 0;
@@ -52,7 +52,6 @@ export function getDraftTagsFromTraits(
     if (t.heavyCC) ccBurst += 1;
     if (t.healing) healing += 1;
 
-    const flexNames: string[] = [];
     if (t.damage === "AP") ap += 1;
     else if (t.damage === "AD") ad += 1;
     else {
@@ -94,7 +93,7 @@ export function getDraftTagsFromTraits(
 export function tagsToPills(tags: DraftTags): string[] {
   const pills: string[] = [];
   if (tags.tanky) pills.push("2+ tanks");
-  if (tags.heavyCCBurst) pills.push("burst + CC");
+  if (tags.heavyCCBurst) pills.push("heavy CC");
   if (tags.heavyAP) pills.push("heavy AP");
   if (tags.heavyAD) pills.push("heavy AD");
   if (tags.healing) pills.push("healing");

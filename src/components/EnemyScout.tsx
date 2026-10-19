@@ -25,6 +25,20 @@ const SCOUT_MAP: Record<
   string,
   Partial<Record<Selected | "any", Scout>>
 > = {
+  mordekaiser: {
+    any: {
+      tags: ['Isolation', 'QSS does not work'],
+      title: 'Realm of Death cannot be removed with Quicksilver Sash.',
+      bullets: ['Track his R before committing; plan spacing, durability or stasis rather than buying QSS for his ultimate.', '26.20 reduced his early ultimate cooldown; respect repeat all-in windows.'],
+    },
+  },
+  belveth: {
+    any: {
+      tags: ['Scaling', '26.15 update'],
+      title: 'Her early invade pattern is weaker; deny safe stacks and objective access.',
+      bullets: ['Early Q recasts are spaced further apart. Punish committed directions with nearby lane priority.', 'At 80 stacks True Form can last until death. Do not rely on waiting out its old timer.'],
+    },
+  },
   // Common supports / engage
   thresh: {
     any: {
@@ -265,6 +279,7 @@ const SCOUT_MAP: Record<
       tags: ["Point&click", "All-in"],
       title: "R is guaranteed engage and sets up burst.",
       bullets: [
+        'QSS and tenacity do not remove her ultimate knockup; plan positioning, peel or stasis before it lands.',
         "Play around her R cooldown; don’t stand alone in front.",
         "After she commits, she’s often stuck—turn on her team’s backline.",
       ],
@@ -542,7 +557,7 @@ function genericScout(champName: string, selected: Selected): Scout {
     }
 
     if (selected === "belveth") {
-      bullets.push("Play skirmish → objective: win 2v2/3v3, then convert to Herald/Baron form.");
+      bullets.push("Protect clear and stacks; convert safe skirmishes into coral and objectives as you scale.");
       bullets.push("Teamfights: don’t front-enter—wait for CC, then E through burst and chase with resets.");
     }
 

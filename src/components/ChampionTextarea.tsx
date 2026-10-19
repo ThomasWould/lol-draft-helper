@@ -1,8 +1,11 @@
 // src/components/ChampionTextarea.tsx
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import type { DDragonChampion } from "../api/ddragon";
+import { GameIcon } from "./GameIcon";
+import { META } from "../recommendations/meta";
 
 type Props = {
+  id?: string;
   value: string;
   onChange: (next: string) => void;
   championList: DDragonChampion[];
@@ -25,6 +28,7 @@ function getActiveToken(text: string) {
 }
 
 export function ChampionTextarea({
+  id,
   value,
   onChange,
   championList,
@@ -36,6 +40,7 @@ export function ChampionTextarea({
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
+  const suggestionId = useId();
 
   const { token, startIndex } = useMemo(() => getActiveToken(value), [value]);
   const q = normalize(token);
@@ -43,7 +48,9 @@ export function ChampionTextarea({
   const suggestions = useMemo(() => {
     if (!q) return [];
     const matches = championList
-      .filter((c) => normalize(c.name).includes(q) || normalize(c.id).includes(q))
+      .filter(
+        (c) => normalize(c.name).includes(q) || normalize(c.id).includes(q),
+      )
       .slice(0, 8);
     return matches;
   }, [q, championList]);
@@ -53,7 +60,8 @@ export function ChampionTextarea({
     const before = value.slice(0, startIndex);
     const beforeTrimmedRight = before.replace(/[ \t]+$/g, ""); // avoid double spaces
 
-    const needsSpaceAfterSeparator = beforeTrimmedRight.endsWith(",") || beforeTrimmedRight.endsWith("\n");
+    const needsSpaceAfterSeparator =
+      beforeTrimmedRight.endsWith(",") || beforeTrimmedRight.endsWith("\n");
     const sepSpace = needsSpaceAfterSeparator ? " " : "";
 
     // If user is mid-token, replace it; if token empty, just append
@@ -79,13 +87,23 @@ export function ChampionTextarea({
   }
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className="championInput">
       <textarea
+        id={id}
         className="textarea"
         ref={taRef}
         disabled={disabled}
         value={value}
         aria-label={ariaLabel}
+        aria-autocomplete="list"
+        aria-controls={
+          open && suggestions.length > 0 ? suggestionId : undefined
+        }
+        aria-activedescendant={
+          open && suggestions.length > 0
+            ? `${suggestionId}-${Math.min(highlight, suggestions.length - 1)}`
+            : undefined
+        }
         onChange={(e) => {
           onChange(e.target.value);
           setHighlight(0);
@@ -111,7 +129,9 @@ export function ChampionTextarea({
           } else if (e.key === "Enter" || e.key === "Tab") {
             if (q) {
               e.preventDefault();
-              applyChampion(suggestions[highlight]);
+              applyChampion(
+                suggestions[Math.min(highlight, suggestions.length - 1)],
+              );
             }
           } else if (e.key === "Escape") {
             setOpen(false);
@@ -122,34 +142,39 @@ export function ChampionTextarea({
       />
 
       {open && q && suggestions.length > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            zIndex: 20,
-            top: "100%",
-            left: 0,
-            right: 0,
-            marginTop: 6,
-            borderRadius: 10,
-            border: "1px solid rgba(255,255,255,0.12)",
-            background: "rgba(20,20,20,0.98)",
-            overflow: "hidden",
-          }}
-        >
-          {suggestions.map((c, idx) => (
-            <div
-              key={c.id}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => applyChampion(c)}
-              style={{
-                padding: "10px 12px",
-                cursor: "pointer",
-                background: idx === highlight ? "rgba(255,255,255,0.08)" : "transparent",
-              }}
-            >
-              {c.name}
-            </div>
-          ))}
+        <div className="suggestionPanel">
+          <div
+            className="suggestions"
+            id={suggestionId}
+            role="listbox"
+            aria-label={`${ariaLabel ?? "Champion"} suggestions`}
+          >
+            {suggestions.map((c, idx) => (
+              <div
+                key={c.id}
+                id={`${suggestionId}-${idx}`}
+                className={`suggestion ${idx === highlight ? "highlighted" : ""}`}
+                role="option"
+                aria-selected={idx === highlight}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyChampion(c)}
+              >
+                <GameIcon
+                  label={c.name}
+                  src={`https://ddragon.leagueoflegends.com/cdn/${META.dataVersion}/img/champion/${c.image.full}`}
+                />
+                <span>
+                  {c.name}
+                  <small>{c.tags.join(" · ")}</small>
+                </span>
+                <span className="suggestionEnter">↵</span>
+              </div>
+            ))}
+          </div>
+          <div className="suggestionHelp">
+            ↑ ↓ Navigate <span>↵ Select</span>
+            <span>esc Close</span>
+          </div>
         </div>
       )}
     </div>

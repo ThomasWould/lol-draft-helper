@@ -24,7 +24,7 @@ function norm(s: string) {
 const OVERRIDES: Record<string, Partial<ChampionTraits>> = {
   // ---------------- Healing (big / reliable healing in kit) ----------------
   aatrox: { healing: true, damage: "AD" },
-  warwick: { healing: true, damage: "AD" },
+  warwick: { healing: true, damage: "MIXED" },
   soraka: { healing: true, damage: "AP" },
   yuumi: { healing: true, damage: "AP" },
   mundo: { healing: true, damage: "AD", tanky: true },
@@ -55,15 +55,50 @@ const OVERRIDES: Record<string, Partial<ChampionTraits>> = {
   pantheon: { heavyCC: true },
   galio: { heavyCC: true, tanky: true },
 
+  // Damage profiles and reliable control that class tags miss.
+  akali: { damage: "AP" },
+  evelynn: { damage: "AP" },
+  elise: { damage: "AP", heavyCC: true },
+  ekko: { damage: "AP" },
+  fizz: { damage: "AP" },
+  katarina: { damage: "AP" },
+  diana: { damage: "AP" },
+  lillia: { damage: "AP", heavyCC: true },
+  shyvana: { damage: "MIXED" },
+  udyr: { damage: "MIXED" },
+  volibear: { damage: "MIXED", healing: true, heavyCC: true },
+  nunu: { damage: "AP", healing: true, heavyCC: true },
+  sylas: { damage: "AP", healing: true },
+  gragas: { damage: "AP", heavyCC: true },
+  neeko: { damage: "AP", heavyCC: true },
+  rell: { damage: "AP", heavyCC: true, tanky: true },
+  braum: { damage: "AP", heavyCC: true, tanky: true },
+  ornn: { damage: "MIXED", heavyCC: true, tanky: true },
+  malphite: { damage: "AP", heavyCC: true, tanky: true },
+  ashe: { damage: "AD", heavyCC: true },
+  morgana: { damage: "AP", heavyCC: true },
+  lux: { damage: "AP", heavyCC: true },
+  renata: { damage: "AP", heavyCC: true },
+  ambessa: { damage: "AD", healing: true, tanky: false },
+  yunara: { damage: "MIXED", tanky: false },
+  mel: { damage: "AP" },
+  locke: { damage: "AP" },
+  // Juggernauts may function as frontliners despite class tags.
+  darius: { damage: "AD", tanky: true, healing: true },
+  garen: { damage: "AD", tanky: true },
+  sett: { damage: "AD", tanky: true },
+  nasus: { damage: "AD", tanky: true, healing: true },
+  aurelionsol: { damage: "AP" },
+
   // ---------------- Damage type outliers / mixed ----------------
   teemo: { damage: "AP" },
   kayle: { damage: "MIXED" },
   gwen: { damage: "AP" },
   mordekaiser: { damage: "AP" },
-  corki: { damage: "MIXED" },
+  corki: { damage: "AD" },
   kaisa: { damage: "MIXED" },
   kogmaw: { damage: "MIXED" },
-  jax: { damage: "AD" },
+  jax: { damage: "MIXED" },
 };
 
 /**
@@ -93,7 +128,7 @@ function inferDamage(tags: string[]): DamageType {
 
 function inferTanky(tags: string[]) {
   const t = tags.map((x) => x.toLowerCase());
-  return t.includes("tank") || t.includes("fighter");
+  return t.includes("tank");
 }
 
 function inferRanged(champ: DDragonChampion) {
