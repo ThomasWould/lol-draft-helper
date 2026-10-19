@@ -21,6 +21,27 @@ const [champions, items] = await Promise.all([
   get("champion.json"),
   get("item.json"),
 ]);
+const runeResponse = await fetch(root + "runesReforged.json", {
+  signal: AbortSignal.timeout(15000),
+});
+if (!runeResponse.ok) throw new Error(`Runes: HTTP ${runeResponse.status}`);
+const runeTrees = await runeResponse.json();
+if (!Array.isArray(runeTrees) || runeTrees.length !== 5)
+  throw new Error("Invalid rune catalog");
+const runes = runeTrees.flatMap((tree) =>
+  tree.slots.flatMap((slot, index) =>
+    slot.runes.map((rune) => ({
+      name: rune.name,
+      tree: tree.name,
+      slot: index,
+      icon: rune.icon,
+    })),
+  ),
+);
+await writeFile(
+  new URL("../src/data/runes.json", import.meta.url),
+  JSON.stringify({ version, runes }, null, 2) + "\n",
+);
 const roster = Object.fromEntries(
   Object.entries(champions).map(([id, c]) => [
     id,
@@ -46,6 +67,8 @@ const itemNames = [
 const itemIcons = Object.fromEntries(
   Object.values(items)
     .filter((i) => i.maps?.["11"] && i.gold.purchasable && i.inStore !== false)
+    // Duplicate names can include mode variants. Let the base item win.
+    .sort((a, b) => parseInt(b.image.full) - parseInt(a.image.full))
     .map((i) => [i.name, i.image.full]),
 );
 await writeFile(

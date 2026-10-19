@@ -29,6 +29,12 @@ The app checks the latest Data Dragon roster, validates cached data, and falls b
 
 ## Interface
 
+Rune pages show Riot's rune artwork and separate primary, secondary and shard choices. The reviewed Data Dragon rune catalog powers validation of every build branch: four primary runes, two secondary runes, no duplicate rows, and no secondary keystones. Lane matchup buttons let you select known opponents directly without retyping names.
+
+Drafts automatically save on the current device, including the selected champion and optional lane matchups. **Share draft** copies a versioned URL containing the draft; opening it imports the setup and recomputes advice with the app's reviewed patch. Clipboard failures expose a selectable link. **Clear all** can be undone until the next edit.
+
+**Lock-in view** brings the full rune page, skill order, starting items and spells into a compact preparation panel, alongside the build and fight plan. Its three-item checklist tracks preparation for the current draft; leaving the view resets the checklist. Partial drafts show how many opposing picks are still unknown.
+
 The draft workspace uses champion artwork, opponent portraits, item icons with offline fallbacks, and a responsive one-, two-, or three-column layout. Copy the complete build plan, explore a sample draft, or expand rune and wave details. Coach shortcuts prepare a question for review before sending. Keyboard autocomplete, visible focus states and reduced-motion preferences are supported.
 
 ## Development
@@ -58,5 +64,5 @@ Playwright covers Chromium, Firefox and WebKit; six champion flows, lane-only an
 1. Confirm the live PC Summoner's Rift patch and hotfixes in Riot's official notes. Review intervening champion, item, rune and system changes; exclude PBE and other game modes.
 2. Check each linked build source for the intended role, patch and sample bracket. Update all six recommendation modules and relevant traits/scout notes. Distinguish sourced baselines from judgment-based draft adjustments.
 3. Update `src/recommendations/meta.ts` with the reviewed patch, matching Data Dragon release and actual review date.
-4. Run `npm run data:refresh -- 16.20.1` with the newly reviewed Data Dragon version. This refreshes the compact fallback roster, item icon index, and item-name test fixture only. Update the fixture import in `tests/recommendations.spec.ts` to match.
+4. Run `npm run data:refresh -- 16.20.1` with the newly reviewed Data Dragon version. This refreshes the compact fallback roster, item icon index, rune catalog, and item-name test fixture. Update the fixture import in `tests/recommendations.spec.ts` to match. The script refreshes catalogs; it does not choose builds or runes.
 5. Run lint, build and tests. Review representative lane, suppression, healing, tank and mobile scenarios before publishing.

@@ -1720,6 +1720,382 @@ details[open] > summary > .icon:last-child {
     font-size: 24px;
   }
 }
+.sessionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  margin: 0 0 24px;
+  border: 1px solid #303136;
+  border-radius: 12px;
+  background: linear-gradient(110deg, #1d2023, #14171b);
+}
+.sessionInfo,
+.sessionActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sessionInfo > .icon {
+  color: #d5b77c;
+  width: 20px;
+  flex-shrink: 0;
+}
+.sessionInfo {
+  font-size: 12px;
+  color: #e6e1d8;
+}
+.sessionInfo small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #9a9fa8;
+}
+.sessionActions {
+  flex-shrink: 0;
+}
+.modeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #d5b77c;
+  border-radius: 7px;
+  padding: 10px 14px;
+  background: #d5b77c;
+  color: #151719;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.modeButton .icon {
+  width: 15px;
+  height: 15px;
+}
+.modeButton:hover {
+  background: #ead3aa;
+}
+.sessionActions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.shareStatus {
+  color: #7ac4b3;
+  font-size: 12px;
+  margin: -10px 0 20px;
+  overflow-wrap: anywhere;
+}
+.shareFallback {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #14171b;
+  color: #e6e1d8;
+  border: 1px solid #d5b77c;
+  border-radius: 7px;
+}
+.undoNotice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  margin-top: 12px;
+  background: #212b29;
+  color: #b3d4c9;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.undoNotice button {
+  border: 0;
+  background: none;
+  color: #d5b77c;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+.draftProgress {
+  margin: 20px 0;
+}
+.draftProgress > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.draftProgress > div > span:last-child {
+  color: #9a9fa8;
+  font-size: 10px;
+}
+.draftProgressTrack {
+  display: flex;
+  gap: 5px;
+  margin: 10px 0;
+}
+.draftProgressTrack span {
+  height: 3px;
+  flex: 1;
+  border-radius: 2px;
+  background: #30353a;
+}
+.draftProgressTrack span.revealed {
+  background: #7ac4b3;
+}
+.draftProgress p {
+  color: #9a9fa8;
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0;
+}
+.laneQuickPicks {
+  margin-top: 12px;
+}
+.laneQuickPicks > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.laneQuickPicks button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 5px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #0e1115;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+}
+.laneQuickPicks button[aria-pressed="true"] {
+  border-color: #7ac4b380;
+  color: #a4ddcf;
+  background: #7ac4b30d;
+}
+.laneQuickPicks .gameIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+}
+.runePage {
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+}
+.runeTreeHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.runeTreeHeading > span:last-child {
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.runeChoices {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.runeChoice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text);
+}
+.runeChoice .gameIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0c0e11;
+  flex-shrink: 0;
+}
+.runeChoice.keystone {
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: #d5b77c0b;
+  border: 1px solid #d5b77c30;
+  color: var(--gold);
+}
+.runeChoice.keystone .gameIcon {
+  width: 38px;
+  height: 38px;
+}
+.runePage .runeShards {
+  display: grid;
+  gap: 7px;
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 0;
+}
+.detailsContent > .runePage {
+  grid-template-columns: 1fr 1fr;
+  padding: 12px 0 20px;
+}
+.detailsContent > .runePage .runeShards {
+  grid-column: 1 / -1;
+}
+@media (max-width: 420px) {
+  .detailsContent > .runePage {
+    grid-template-columns: 1fr;
+  }
+}
+.lockInOpponents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+.lockInOpponents > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.lockInOpponents .gameIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+.lockInSetup {
+  padding: 22px;
+  margin: 22px 0;
+  border: 1px solid #49412f;
+  border-radius: 10px;
+  background: linear-gradient(130deg, #26251f, #191c20 75%);
+}
+.setupHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.setupHeading > .icon {
+  color: #d5b77c;
+  width: 28px;
+  height: 28px;
+}
+.setupHeading h3 {
+  font:
+    25px Georgia,
+    serif;
+  color: #ede5d7;
+  margin: 8px 0 20px;
+}
+.setupGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.setupGrid p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #c2c5ca;
+  margin: 8px 0 16px;
+}
+.setupRunes {
+  border-right: 1px solid #373735;
+  padding-right: 24px;
+}
+.checklistHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #373735;
+  padding-top: 18px;
+  margin-top: 12px;
+}
+.checklistHeading > span:last-child {
+  font-size: 11px;
+  color: #7ac4b3;
+}
+.checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+.checklist label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #b7bac1;
+  background: #14171b;
+  padding: 10px;
+  border: 1px solid #34383e;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.checklist input {
+  accent-color: #7ac4b3;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+.checklist .complete {
+  color: #a4ddcf;
+  border-color: #416359;
+}
+.lockInMode .workspace {
+  display: block;
+  max-width: 980px;
+  margin-inline: auto;
+}
+.lockInMode .inputsCard,
+.lockInMode .coachCard,
+.lockInMode .recLines,
+.lockInMode .waveBox,
+.lockInMode .banSection,
+.lockInMode .introMeta {
+  display: none;
+}
+.lockInMode .championHero {
+  min-height: 160px;
+}
+.lockInMode .intro {
+  padding-block: 24px;
+}
+@media (max-width: 600px) {
+  .sessionBar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+    gap: 14px;
+  }
+  .sessionActions {
+    justify-content: space-between;
+  }
+  .sessionActions > button {
+    flex: 1;
+  }
+  .sessionInfo {
+    font-size: 11px;
+  }
+  .setupGrid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .setupRunes {
+    border-right: 0;
+    padding-right: 0;
+  }
+  .lockInSetup {
+    padding: 16px;
+  }
+  .checklist {
+    flex-direction: column;
+  }
+  .draftProgress .eyebrow {
+    font-size: 8px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

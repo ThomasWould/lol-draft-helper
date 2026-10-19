@@ -33,6 +33,14 @@ import itemIcons from "./data/item-icons.json";
 import { EnemyScout } from "./components/EnemyScout";
 import { CoachChat } from "./components/CoachChat";
 import type { CoachContext } from "./coach/types";
+import {
+  draftLink,
+  useDraftSession,
+  type DraftSession,
+} from "./hooks/useDraftSession";
+import { LockInChecklist } from "./components/LockInChecklist";
+import { RunePage } from "./components/RunePage";
+import { LaneQuickPicks } from "./components/LaneQuickPicks";
 
 const ITEM_ICONS = new Map(
   Object.entries(itemIcons).map(([name, image]) => [
@@ -55,15 +63,31 @@ export default function App() {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
     "idle",
   );
-  const [selected, setSelected] = useState<ChampionKey>("masteryi");
-  const [enemyRaw, setEnemyRaw] = useState("");
-  const [enemyTopRaw, setEnemyTopRaw] = useState(""); // optional for TOP champs
-  const [enemyBotRaw, setEnemyBotRaw] = useState(""); // optional for BOT champs (2 champs)
+  const { draft, setDraft, saved, notice: sessionNotice } = useDraftSession();
+  const { selected, enemyRaw, enemyTopRaw, enemyBotRaw } = draft;
+  const [undoDraft, setUndoDraft] = useState<DraftSession | null>(null);
+  const [lockIn, setLockIn] = useState(false);
+  const [shareStatus, setShareStatus] = useState("");
+  const [shareFallback, setShareFallback] = useState("");
+  function updateDraft<K extends keyof DraftSession>(
+    key: K,
+    value: DraftSession[K],
+  ) {
+    setDraft((prev) => ({ ...prev, [key]: value }));
+    setUndoDraft(null);
+    setShareStatus("");
+    setShareFallback("");
+  }
+  const setSelected = (value: ChampionKey) => updateDraft("selected", value);
+  const setEnemyRaw = (value: string) => updateDraft("enemyRaw", value);
+  const setEnemyTopRaw = (value: string) => updateDraft("enemyTopRaw", value);
+  const setEnemyBotRaw = (value: string) => updateDraft("enemyBotRaw", value);
 
   function clearAllEnemyInputs() {
-    setEnemyRaw("");
-    setEnemyTopRaw("");
-    setEnemyBotRaw("");
+    setUndoDraft(draft);
+    setDraft({ ...draft, enemyRaw: "", enemyTopRaw: "", enemyBotRaw: "" });
+    setShareStatus("");
+    setShareFallback("");
   }
 
   const { loading, error, version, championList } = useChampionData();
@@ -206,6 +230,9 @@ export default function App() {
         [
           `${champion.label} · ${champion.role} · Patch ${META.patch}`,
           ...rec.headlineLines,
+          ...rec.runes,
+          `Skills: ${rec.skillOrder}`,
+          `Start & spells: ${rec.starter.join(" · ")}`,
           ...rec.itemsOrdered.map(
             (item, index) =>
               `${index + 1}. ${item.name}${item.note ? ` — ${item.note}` : ""}`,
@@ -220,8 +247,20 @@ export default function App() {
     window.setTimeout(() => setCopyState("idle"), 2400);
   }
 
+  async function shareDraft() {
+    const link = draftLink(draft);
+    try {
+      await navigator.clipboard.writeText(link);
+      setShareStatus("Draft link copied");
+      setShareFallback("");
+    } catch {
+      setShareStatus("Select and copy your draft link below.");
+      setShareFallback(link);
+    }
+  }
+
   return (
-    <div className="page">
+    <div className={`page ${lockIn && shouldShowRecs ? "lockInMode" : ""}`}>
       <header className="topbar">
         <a className="brand" href="#main">
           <span className="brandMark">
@@ -267,6 +306,54 @@ export default function App() {
             </span>
           </div>
         </section>
+
+        <div className="sessionBar" aria-label="Draft tools">
+          <div className="sessionInfo">
+            <Icon name="book" />
+            <span>
+              {saved
+                ? "Draft saved on this device"
+                : "Draft stays open in this tab"}
+              <small>
+                {sessionNotice || "Your plan evolves with every pick."}
+              </small>
+            </span>
+          </div>
+          <div className="sessionActions">
+            <button
+              className="copyButton"
+              type="button"
+              onClick={shareDraft}
+              disabled={!shouldShowRecs}
+            >
+              <Icon name="external" /> Share draft
+            </button>
+            <button
+              className="modeButton"
+              type="button"
+              disabled={!shouldShowRecs}
+              aria-pressed={lockIn}
+              onClick={() => setLockIn((v) => !v)}
+            >
+              <Icon name={lockIn ? "check" : "target"} />
+              {lockIn ? "Back to draft" : "Lock-in view"}
+            </button>
+          </div>
+        </div>
+        {shareStatus && (
+          <p className="shareStatus" role="status">
+            {shareStatus}
+          </p>
+        )}
+        {shareFallback && (
+          <input
+            className="shareFallback"
+            aria-label="Draft share link"
+            readOnly
+            value={shareFallback}
+            onFocus={(e) => e.target.select()}
+          />
+        )}
 
         <div className="workspace">
           <section className="card inputsCard" aria-label="Draft setup">
@@ -333,6 +420,20 @@ export default function App() {
                 Clear all
               </button>
             </div>
+            {undoDraft && (
+              <div className="undoNotice" role="status">
+                Draft cleared.
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraft(undoDraft);
+                    setUndoDraft(null);
+                  }}
+                >
+                  Undo clear
+                </button>
+              </div>
+            )}
             <p className="fieldHelp">
               Add names separated by commas or new lines.
             </p>
@@ -393,7 +494,7 @@ export default function App() {
                     className="chip"
                     aria-label={`Remove ${c.name}`}
                     title={`Remove ${c.name}`}
-                    onClick={() => setEnemyRaw((prev) => removeEnemy(c, prev))}
+                    onClick={() => setEnemyRaw(removeEnemy(c, enemyRaw))}
                   >
                     {c.name}
                     <Icon name="close" />
@@ -425,6 +526,12 @@ export default function App() {
                   placeholder="e.g. Teemo"
                   rows={1}
                 />
+                <LaneQuickPicks
+                  candidates={matched}
+                  selected={topMatched.slice(0, 1)}
+                  limit={1}
+                  onChange={setEnemyTopRaw}
+                />
               </div>
             )}
             {isBotPick(selected) && (
@@ -442,6 +549,12 @@ export default function App() {
                   ariaLabel="Enemy bot lane"
                   placeholder="e.g. Jinx, Leona"
                   rows={1}
+                />
+                <LaneQuickPicks
+                  candidates={matched}
+                  selected={botMatched.slice(0, 2)}
+                  limit={2}
+                  onChange={setEnemyBotRaw}
                 />
               </div>
             )}
@@ -584,6 +697,51 @@ export default function App() {
                 </div>
               ) : (
                 <>
+                  <div className="draftProgress">
+                    <div>
+                      <span className="eyebrow">
+                        {scoutChamps.length === 5
+                          ? "FULL DRAFT IN VIEW"
+                          : "SCOUTING IN PROGRESS"}
+                      </span>
+                      <span>{scoutChamps.length} / 5 revealed</span>
+                    </div>
+                    <div className="draftProgressTrack" aria-hidden="true">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <span
+                          key={i}
+                          className={i < scoutChamps.length ? "revealed" : ""}
+                        />
+                      ))}
+                    </div>
+                    <p>
+                      {scoutChamps.length === 5
+                        ? "All opponents accounted for. Review your setup before locking in."
+                        : "Early plan based on known opponents. Add the remaining picks to refine it."}
+                    </p>
+                  </div>
+                  {lockIn && (
+                    <div
+                      className="lockInOpponents"
+                      aria-label="Opponents in this plan"
+                    >
+                      {scoutChamps.map((c) => (
+                        <span key={c.id}>
+                          <GameIcon
+                            label={c.name}
+                            src={championIconUrl(iconVersion, c)}
+                          />
+                          {c.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {lockIn && (
+                    <LockInChecklist
+                      key={`${selected}:${scoutChamps.map((c) => c.id).join(",")}:${enemyTopNormalized}:${enemyBotNormalized.join(",")}`}
+                      rec={rec}
+                    />
+                  )}
                   {tagPills.length > 0 && (
                     <div className="pillRow threatPills">
                       {tagPills.map((pill) => (
@@ -700,11 +858,7 @@ export default function App() {
                     </summary>
                     <div className="detailsContent">
                       <div className="label">Rune page</div>
-                      <ul>
-                        {rec.runes.map((line) => (
-                          <li key={line}>{line}</li>
-                        ))}
-                      </ul>
+                      <RunePage lines={rec.runes} />
                       <p>
                         <b>Skills:</b> {rec.skillOrder}
                       </p>
@@ -747,8 +901,8 @@ export default function App() {
                 </div>
               )}
               <p className="planFootnote">
-                Adapt this plan to actual items, lane
-                pressure, and the threats reaching you.
+                Adapt this plan to actual items, lane pressure, and the threats
+                reaching you.
               </p>
             </div>
           </section>

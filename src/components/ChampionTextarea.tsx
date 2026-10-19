@@ -89,6 +89,7 @@ export function ChampionTextarea({
   return (
     <div className="championInput">
       <textarea
+        maxLength={2000}
         id={id}
         className="textarea"
         ref={taRef}

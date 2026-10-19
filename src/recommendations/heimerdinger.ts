@@ -98,7 +98,7 @@ export function getHeimerdingerRec(
 
     runes: [
       "Precision: Conqueror / Presence of Mind / Legend: Haste / Cut Down",
-      "Sorcery: Absolute Focus / Gathering Storm; Comet is a poke alternative.",
+      "Sorcery: Absolute Focus / Gathering Storm",
       "Shards: Adaptive Force / Adaptive Force / Scaling Health",
     ],
 
@@ -106,6 +106,7 @@ export function getHeimerdingerRec(
     starter: [start, "Flash + Ignite for pressure; Teleport for map coverage"],
     coreItems: items.slice(0, 6).map((x) => (x.note ? `${x.name} ${x.note}` : x.name)),
     situational: [
+      "Arcane Comet is an alternative primary keystone for a poke-focused page; it replaces Conqueror rather than joining this page.",
       "If they have multiple divers: Zhonya earlier + play tighter around turret nests.",
       "If enemy stacks MR: Void Staff earlier (4th/5th).",
       "If you need perma-kite: Rylai earlier and use turrets as a slow field.",

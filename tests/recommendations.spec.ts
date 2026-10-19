@@ -11,6 +11,7 @@ import { getLuxSupportRec } from '../src/recommendations/lux';
 import { needsQSS } from '../src/recommendations/shared';
 import { matchesReviewedPatch } from '../src/recommendations/meta';
 import { resolveChampions, removeEnemy } from '../src/draft';
+import { validateRunePage } from '../src/recommendations/runes';
 
 const roster = Object.values(champions);
 const blank = getDraftTagsFromTraits([], roster);
@@ -32,6 +33,7 @@ test('all build branches produce six unique, live Summoner’s Rift items', () =
         for (const name of names) expect(catalog.has(name), `${build.name}: ${name}`).toBeTruthy();
         expect(names.filter(n => [norm("Lord Dominik's Regards"), norm('Mortal Reminder'), norm('Terminus'), norm('Serylda’s Grudge')].includes(n)).length).toBeLessThanOrEqual(1);
         expect(rec.runes.length).toBeGreaterThan(1);
+        expect(validateRunePage(rec.runes), `${build.name}: legal rune page`).toEqual([]);
       }
     }
   }
@@ -81,4 +83,12 @@ test('champion matching does not confuse Vi with Anivia or Viktor', () => {
   const ordinary = getLuxSupportRec(blank, ['anivia', 'viktor']);
   expect(ordinary.itemsOrdered.map(x => x.name)).not.toContain("Zhonya's Hourglass");
   expect(getLuxSupportRec(blank, ['vi']).itemsOrdered.map(x => x.name)).toContain("Zhonya's Hourglass");
+});
+
+test('rune validation catches removed runes, duplicate slots and secondary keystones', () => {
+  const primary = 'Precision: Press the Attack / Triumph / Legend: Alacrity / Coup de Grace';
+  expect(validateRunePage([primary, 'Domination: Eyeball Collection / Treasure Hunter'])).not.toEqual([]);
+  expect(validateRunePage([primary, 'Resolve: Second Wind / Bone Plating'])).not.toEqual([]);
+  expect(validateRunePage([primary, 'Sorcery: Arcane Comet / Gathering Storm'])).not.toEqual([]);
+  expect(getVolibearRec({ ...blank, rangedTop: true }, []).runes[1]).toContain('Second Wind');
 });

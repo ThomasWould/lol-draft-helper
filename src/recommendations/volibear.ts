@@ -163,7 +163,7 @@ const startLine =
     // Full details are available in the recommendation card.
     runes: [
       "Precision: Lethal Tempo / Triumph / Legend: Haste / Last Stand",
-      topIsRanged ? "Resolve: Second Wind / Revitalize" : "Resolve: Demolish / Revitalize",
+      topIsRanged || tags.rangedTop ? "Resolve: Second Wind / Revitalize" : "Resolve: Demolish / Revitalize",
       "Shards: Attack Speed / Adaptive Force / Scaling Health",
     ],
 
