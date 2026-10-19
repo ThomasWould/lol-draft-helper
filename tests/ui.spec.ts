@@ -447,3 +447,164 @@ test("draft library ignores corrupt entries and identifies plans saved on an old
   await expect(page.getByRole("combobox")).toHaveValue("lux");
   await expect(page.locator(".planSource")).toContainText("26.20");
 });
+
+test("manual styles preserve defenses and allies feed the team plan and coach", async ({
+  page,
+}) => {
+  let context:
+    | {
+        alliedTeam: string[];
+        buildStyle: string;
+        teamAdvice: string[];
+        enemyTeam: string[];
+      }
+    | undefined;
+  await page.route("**/api/coach", (route) => {
+    context = route.request().postDataJSON().context;
+    return route.fulfill({ json: { text: "Team-aware reply" } });
+  });
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Enemy team", exact: true })
+    .fill("Malphite, Leona, Malzahar");
+  await page.getByRole("button", { name: "Crit burst", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Your teammates", exact: true })
+    .fill("Ornn, Lulu, Orianna, Ashe");
+  await expect(page.locator(".itemList")).toContainText("The Collector");
+  await expect(page.locator(".itemList")).toContainText("Mercurial Scimitar");
+  await expect(
+    page.getByRole("region", { name: "Allied team plan" }),
+  ).toContainText("Let Ornn commit first");
+  await expect(
+    page.getByRole("region", { name: "Allied team plan" }),
+  ).toContainText("5 / 5 known");
+  await page
+    .getByRole("textbox", { name: "Ask coach" })
+    .fill("Who should I follow?");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.locator(".coachBubble").last()).toContainText(
+    "Team-aware reply",
+  );
+  expect(context?.alliedTeam).toEqual([
+    "Master Yi",
+    "Ornn",
+    "Lulu",
+    "Orianna",
+    "Ashe",
+  ]);
+  expect(context?.buildStyle).toBe("Crit burst");
+  expect(context?.enemyTeam).toEqual(["Malphite", "Leona", "Malzahar"]);
+  await page.getByRole("button", { name: "Lock-in view", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Lock-in preparation" }),
+  ).toContainText("Hail of Blades");
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBeTruthy();
+  }
+});
+
+test("allies and build styles round trip through library, reload, share and copied plans", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    Object.defineProperty(navigator, "clipboard", {
+      value: {
+        writeText: async (text: string) => {
+          document.body.dataset.copiedText = text;
+        },
+      },
+    }),
+  );
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Enemy team", exact: true })
+    .fill("Jinx");
+  await page
+    .getByRole("button", { name: "On-hit sustain", exact: true })
+    .click();
+  await page
+    .getByRole("textbox", { name: "Your teammates", exact: true })
+    .fill("Ornn, Lulu");
+  await page.locator(".draftLibrary > summary").click();
+  await page
+    .getByRole("textbox", { name: "Draft name", exact: true })
+    .fill("On-hit with protection");
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await page.getByRole("button", { name: "Share draft", exact: true }).click();
+  const link = await page.locator("body").getAttribute("data-copied-text");
+  await page.getByRole("combobox").selectOption("lux");
+  await page.goto(link!);
+  await expect(
+    page.getByRole("button", { name: "On-hit sustain", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("textbox", { name: "Your teammates", exact: true }),
+  ).toHaveValue("Ornn, Lulu");
+  await expect(page.getByText("Draft saved on this device")).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "On-hit sustain", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Copy build", exact: true }).click();
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-copied-text",
+    /Allied team: Master Yi, Ornn, Lulu/,
+  );
+  await page.getByRole("button", { name: "Crit burst", exact: true }).click();
+  await page.locator(".draftLibrary > summary").click();
+  await page
+    .getByRole("button", { name: "Load On-hit with protection", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "On-hit sustain", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+});
+
+test("ally validation excludes duplicates, the selected player, enemy conflicts and excess picks", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Enemy team", exact: true })
+    .fill("Jinx");
+  await page
+    .getByRole("textbox", { name: "Your teammates", exact: true })
+    .fill("Master Yi, Ornn, Ornn, Lulu, Orianna, Ashe, Jinx, Teemo, typo");
+  await expect(page.locator(".allyChip")).toHaveCount(4);
+  await expect(
+    page.getByText("Already on the enemy team; excluded from allies: Jinx"),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Using the first four unique teammates, plus your champion.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByText("Teammates not recognized: typo")).toBeVisible();
+  await page
+    .getByRole("button", { name: "On-hit sustain", exact: true })
+    .click();
+  await page.getByRole("combobox").selectOption("missfortune");
+  await expect(
+    page.getByRole("button", { name: "Automatic", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page
+    .getByRole("textbox", { name: "Enemy bot lane", exact: true })
+    .fill("Lux");
+  await page.getByRole("button", { name: "First Strike", exact: true }).click();
+  await page.getByText("Full runes, skills & situational advice").click();
+  await expect(page.locator(".recDetails .keystone")).toContainText(
+    "First Strike",
+  );
+  await page
+    .getByRole("button", { name: "Clear teammates", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Allied team plan" }),
+  ).toHaveCount(0);
+});

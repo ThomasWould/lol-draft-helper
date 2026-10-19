@@ -30,8 +30,9 @@ export function PlanImpact({
       </summary>
       <div className="impactBody">
         <p>
-          Compared with this champion's default plan before any opponents are
-          entered. Item order includes boots.
+          Compared with this champion's plan for the chosen style before any
+          opponents are entered. Item order includes boots. Allied guidance is
+          shown separately.
         </p>
         {changes.items.length > 0 && (
           <ul className="impactChanges">

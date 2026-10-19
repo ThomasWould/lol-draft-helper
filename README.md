@@ -29,6 +29,12 @@ The app checks the latest Data Dragon roster, validates cached data, and falls b
 
 ## Interface
 
+**Allied-team context** accepts four teammates and includes your selected champion automatically. It ignores duplicates and allies also present in the analyzed enemy team. Kit-profile signals and curated engage/protection examples produce teamfight guidance; they are not win-rate estimates or measured damage shares. Partial-team guidance identifies unknown picks. Allies influence the team plan and coach; defensive item rules remain based on enemy threats.
+
+**Build styles** expose reviewed alternatives for Master Yi (crit/on-hit), Bel'Veth (PTA/Lethal Tempo), Heimerdinger (Conqueror/Comet), and Miss Fortune (First Strike/PTA). Automatic retains the existing draft rules. A manual style chooses its core/runes while enemy-based defensive adjustments continue. Volibear and Lux currently offer only Automatic. The baseline comparison uses the same selected style. Champion changes reset to Automatic.
+
+Allies and style selections persist in saved and shared drafts; older drafts migrate to no allies and Automatic. Copied plans and coach context include both.
+
 **Draft library** stores up to six named plans on this device. Loading restores the champion and all opponent/lane fields; advice is recomputed with the app's current reviewed patch. Old patch labels remain visible, and saving never silently replaces another entry.
 
 **What this draft changed** compares ordered items, selected runes and starting setup with the same champion's neutral baseline. Changes are exact differences, rather than matchup win-rate estimates. Fight and wave advice may also adapt when no equipment changes are triggered.

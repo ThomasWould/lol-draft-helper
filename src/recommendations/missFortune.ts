@@ -3,11 +3,27 @@ import type { DraftTags } from "./tags";
 import type { ChampRec, OrderedItem } from "./types";
 import { hasAny, carryBoots, cleanseAdvice, withCleanse } from "./shared";
 
-
 function classifySupport(bot: string[]) {
-  const ENGAGE = ["leona", "nautilus", "thresh", "blitzcrank", "rell", "alistar", "rakan", "pyke"];
+  const ENGAGE = [
+    "leona",
+    "nautilus",
+    "thresh",
+    "blitzcrank",
+    "rell",
+    "alistar",
+    "rakan",
+    "pyke",
+  ];
   const POKE = ["lux", "xerath", "velkoz", "brand", "zyra"];
-  const ENCHANT = ["lulu", "janna", "nami", "soraka", "milio", "karma", "yuumi"];
+  const ENCHANT = [
+    "lulu",
+    "janna",
+    "nami",
+    "soraka",
+    "milio",
+    "karma",
+    "yuumi",
+  ];
 
   const isEngage = hasAny(bot, ENGAGE);
   const isPoke = hasAny(bot, POKE);
@@ -16,35 +32,41 @@ function classifySupport(bot: string[]) {
   return { isEngage, isPoke, isEnchant };
 }
 
-
-
 export function getMissFortuneRec(
   tags: DraftTags,
   enemies: string[] = [],
-  enemyBot: string[] = []
+  enemyBot: string[] = [],
+  style: "auto" | "firststrike" | "pta" = "auto",
 ): ChampRec {
   const bot = enemyBot.slice(0, 2);
   const { isEngage, isPoke, isEnchant } = classifySupport(bot);
 
-  const runesLine = isPoke
-    ? "RUNES: Press the Attack — sustained trading alternative when poke denies First Strike"
+  const usePTA = style === "pta" || (style === "auto" && isPoke);
+  const runesLine = usePTA
+    ? `RUNES: Press the Attack — ${style === "pta" ? "selected sustained-trading style" : "sustained trading alternative when poke denies First Strike"}`
     : "RUNES: First Strike / Cash Back / Biscuit Delivery / Jack of All Trades";
-  const secondaryLine = "SECONDARY: Manaflow Band + Gathering Storm; PTA alternative uses Inspiration.";
+  const secondaryLine = usePTA
+    ? "SECONDARY: Biscuit Delivery + Cosmic Insight (Inspiration)"
+    : "SECONDARY: Manaflow Band + Gathering Storm (Sorcery)";
 
   // --- START + LANE RULE ---
-  const starterLine =
-    isPoke ? "START: Doran’s Shield (anti-poke lane stability)" : "START: Doran’s Blade (standard pressure)";
+  const starterLine = isPoke
+    ? "START: Doran’s Shield (anti-poke lane stability)"
+    : "START: Doran’s Blade (standard pressure)";
 
-  const laneRule =
-    isEngage
-      ? "LANE RULE: Don’t stand in hook/engage range — thin wave, hold Flash, punish missed engage with AA+Q; use E only when its slow adds value"
-      : isEnchant
-        ? "LANE RULE: Trade often before they out-sustain — Q bounce poke + wave control into plate windows"
-        : "LANE RULE: Slow push → crash → reset (you want wave control for clean Q bounces + E zones)";
+  const laneRule = isEngage
+    ? "LANE RULE: Don’t stand in hook/engage range — thin wave, hold Flash, punish missed engage with AA+Q; use E only when its slow adds value"
+    : isEnchant
+      ? "LANE RULE: Trade often before they out-sustain — Q bounce poke + wave control into plate windows"
+      : "LANE RULE: Slow push → crash → reset (you want wave control for clean Q bounces + E zones)";
 
   // --- WAVE TIPS (bot lane) ---
   const waveTips = {
-    title: isEngage ? "Keep wave safe vs engage" : isPoke ? "Stabilize vs poke" : "Crash timing for plates",
+    title: isEngage
+      ? "Keep wave safe vs engage"
+      : isPoke
+        ? "Stabilize vs poke"
+        : "Crash timing for plates",
     bullets: [
       ...(isEngage
         ? [
@@ -67,9 +89,14 @@ export function getMissFortuneRec(
   };
 
   const base: OrderedItem[] = [
-    { name: "Hubris" }, { name: carryBoots(tags, 'Boots of Swiftness') },
-    { name: "The Collector" }, { name: "Infinity Edge" },
-    { name: tags.healing ? "Mortal Reminder" : "Lord Dominik's Regards", note: "One Last Whisper upgrade only; swap to Mortal Reminder when anti-heal is needed." },
+    { name: "Hubris" },
+    { name: carryBoots(tags, "Boots of Swiftness") },
+    { name: "The Collector" },
+    { name: "Infinity Edge" },
+    {
+      name: tags.healing ? "Mortal Reminder" : "Lord Dominik's Regards",
+      note: "One Last Whisper upgrade only; swap to Mortal Reminder when anti-heal is needed.",
+    },
     { name: isPoke ? "Bloodthirster" : "Rapid Firecannon" },
   ];
   const core6 = withCleanse(base, enemies);
@@ -91,13 +118,20 @@ export function getMissFortuneRec(
 
     // keep long fields populated (optional future expand)
     runes: [
-      isPoke ? "Precision: Press the Attack / Presence of Mind / Legend: Bloodline / Coup de Grace" : "Inspiration: First Strike / Cash Back / Biscuit Delivery / Jack of All Trades",
-      isPoke ? "Inspiration: Biscuit Delivery / Cosmic Insight" : "Sorcery: Manaflow Band / Gathering Storm",
+      usePTA
+        ? "Precision: Press the Attack / Presence of Mind / Legend: Bloodline / Coup de Grace"
+        : "Inspiration: First Strike / Cash Back / Biscuit Delivery / Jack of All Trades",
+      usePTA
+        ? "Inspiration: Biscuit Delivery / Cosmic Insight"
+        : "Sorcery: Manaflow Band / Gathering Storm",
       "Shards: Adaptive Force / Adaptive Force / Health",
     ],
 
     skillOrder: "Skill order: Q > W > E (take R whenever available).",
-    starter: [starterLine.replace("START: ", ""), "Flash + Barrier; Cleanse against removable CC (not suppression)"],
+    starter: [
+      starterLine.replace("START: ", ""),
+      "Flash + Barrier; Cleanse against removable CC (not suppression)",
+    ],
     coreItems: core6.map((x) => (x.note ? `${x.name} ${x.note}` : x.name)),
     situational: [
       cleanseAdvice,
@@ -106,7 +140,9 @@ export function getMissFortuneRec(
     ],
     notes: [
       "Miss Fortune wins fights off position + timing. Your ult is your nuke—don’t donate it to point-click CC.",
-      enemyBot.length ? `Bot matchup detected: ${enemyBot.slice(0, 2).join(", ")}` : "",
+      enemyBot.length
+        ? `Bot matchup detected: ${enemyBot.slice(0, 2).join(", ")}`
+        : "",
     ].filter(Boolean),
   };
 }

@@ -56,7 +56,7 @@ export function DraftLibrary({
             Save draft
           </button>
         </form>
-        {!canSave && <p>Add an opponent to save a plan.</p>}
+        {!canSave && <p>Add an opponent or teammate to save a plan.</p>}
         {status && (
           <p className="libraryStatus" role="status">
             {status}

@@ -7,6 +7,9 @@ export type CoachContext = {
   championLabel: (typeof CHAMPIONS)[ChampionKey]["label"];
   role: (typeof CHAMPIONS)[ChampionKey]["role"];
   enemyTeam: string[];
+  alliedTeam?: string[];
+  teamAdvice?: string[];
+  buildStyle?: string;
   enemyTop?: string;
   enemyBot?: string; // raw text "Jinx, Leona" (optional)
 

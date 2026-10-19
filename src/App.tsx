@@ -31,6 +31,9 @@ import {
 import { LockInChecklist } from "./components/LockInChecklist";
 import { RunePage } from "./components/RunePage";
 import { LaneQuickPicks } from "./components/LaneQuickPicks";
+import { BuildStylePicker } from "./components/BuildStylePicker";
+import { TeamContext } from "./components/TeamContext";
+import { BUILD_STYLES } from "./recommendations/styles";
 
 const ITEM_ICONS = new Map(
   Object.entries(itemIcons).map(([name, image]) => [
@@ -54,7 +57,13 @@ export default function App() {
     "idle",
   );
   const { draft, setDraft, saved, notice: sessionNotice } = useDraftSession();
-  const { selected, enemyRaw, enemyTopRaw, enemyBotRaw } = draft;
+  const {
+    selected,
+    enemyRaw,
+    enemyTopRaw,
+    enemyBotRaw,
+    alliesRaw = "",
+  } = draft;
   const [undoDraft, setUndoDraft] = useState<DraftSession | null>(null);
   const [lockIn, setLockIn] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
@@ -68,7 +77,12 @@ export default function App() {
     setShareStatus("");
     setShareFallback("");
   }
-  const setSelected = (value: ChampionKey) => updateDraft("selected", value);
+  const setSelected = (value: ChampionKey) => {
+    setDraft((prev) => ({ ...prev, selected: value, buildStyle: "auto" }));
+    setUndoDraft(null);
+    setShareStatus("");
+    setShareFallback("");
+  };
   const setEnemyRaw = (value: string) => updateDraft("enemyRaw", value);
   const setEnemyTopRaw = (value: string) => updateDraft("enemyTopRaw", value);
   const setEnemyBotRaw = (value: string) => updateDraft("enemyBotRaw", value);
@@ -97,6 +111,12 @@ export default function App() {
     tags,
     rec,
     baseline,
+    teammates,
+    team,
+    allyUnmatched,
+    allyConflicts,
+    allyOverflow,
+    style,
   } = useMemo(() => analyzeDraft(draft, championList), [draft, championList]);
   const shouldShowRecs = scoutChamps.length > 0;
 
@@ -111,6 +131,12 @@ export default function App() {
       role: champMeta.role,
 
       enemyTeam: scoutChamps.map((c) => c.name),
+      alliedTeam: teammates.length
+        ? team.members.map((c) => c.name)
+        : undefined,
+      teamAdvice: team.advice,
+      buildStyle: BUILD_STYLES[selected].find((option) => option.id === style)
+        ?.label,
       patch: META.patch,
       reviewedAt: META.reviewedAt,
 
@@ -141,7 +167,18 @@ export default function App() {
         starter: rec.starter,
       },
     };
-  }, [selected, scoutChamps, activeTop, botMatched, tags, tagPills, rec]);
+  }, [
+    selected,
+    scoutChamps,
+    activeTop,
+    botMatched,
+    tags,
+    tagPills,
+    rec,
+    teammates,
+    team,
+    style,
+  ]);
 
   const champion = CHAMPIONS[selected];
   const selectedData = championList.find(
@@ -155,6 +192,13 @@ export default function App() {
         [
           `${champion.label} · ${champion.role} · Patch ${META.patch}`,
           `Opponents: ${scoutChamps.map((c) => c.name).join(", ")}`,
+          `Build style: ${BUILD_STYLES[selected].find((option) => option.id === style)?.label}`,
+          ...(teammates.length
+            ? [
+                `Allied team: ${team.members.map((c) => c.name).join(", ")}`,
+                ...team.advice,
+              ]
+            : []),
           ...rec.headlineLines,
           ...rec.runes,
           `Skills: ${rec.skillOrder}`,
@@ -283,7 +327,7 @@ export default function App() {
 
         <DraftLibrary
           draft={draft}
-          canSave={shouldShowRecs}
+          canSave={shouldShowRecs || teammates.length > 0}
           onLoad={(next) => {
             setDraft(next);
             setLockIn(false);
@@ -341,6 +385,14 @@ export default function App() {
                 </optgroup>
               ))}
             </select>
+            <BuildStylePicker
+              champion={selected}
+              value={style}
+              onChange={(value) => {
+                updateDraft("buildStyle", value);
+                setCopyState("idle");
+              }}
+            />
 
             <div className="inputDivider" />
             <div className="enemyHeader">
@@ -549,6 +601,68 @@ export default function App() {
                 Just exploring? Try an example <Icon name="arrow" />
               </button>
             )}
+            <div className="alliesInputs">
+              <div className="enemyHeader">
+                <label className="label" htmlFor="allied-team">
+                  Your teammates (optional)
+                </label>
+                <button
+                  className="clearBtn"
+                  type="button"
+                  disabled={!alliesRaw.trim()}
+                  onClick={() => updateDraft("alliesRaw", "")}
+                >
+                  Clear teammates
+                </button>
+              </div>
+              <p className="fieldHelp">
+                Add up to four allies. Your champion is included automatically.
+              </p>
+              <ChampionTextarea
+                id="allied-team"
+                ariaLabel="Your teammates"
+                rows={2}
+                value={alliesRaw}
+                onChange={(value) => updateDraft("alliesRaw", value)}
+                championList={championList}
+                placeholder="e.g. Ornn, Orianna, Jinx, Lulu"
+                disabled={!championList.length}
+              />
+              {allyUnmatched.length > 0 && (
+                <p className="notice">
+                  Teammates not recognized: {allyUnmatched.join(", ")}
+                </p>
+              )}
+              {allyConflicts.length > 0 && (
+                <p className="notice">
+                  Already on the enemy team; excluded from allies:{" "}
+                  {allyConflicts.map((c) => c.name).join(", ")}
+                </p>
+              )}
+              {allyOverflow && (
+                <p className="notice">
+                  Using the first four unique teammates, plus your champion.
+                </p>
+              )}
+              {teammates.length > 0 && (
+                <div className="chipRow">
+                  {teammates.map((c) => (
+                    <button
+                      type="button"
+                      className="chip allyChip"
+                      key={c.id}
+                      aria-label={`Remove teammate ${c.name}`}
+                      onClick={() =>
+                        updateDraft("alliesRaw", removeEnemy(c, alliesRaw))
+                      }
+                    >
+                      {c.name}
+                      <Icon name="close" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
 
           <section className="card planCard" aria-label="Your game plan">
@@ -606,6 +720,17 @@ export default function App() {
                   {META.patch}. Builds need a new review.
                 </p>
               )}
+              {style !== "auto" && (
+                <div className="activeStyle">
+                  <Icon name="target" /> Selected style:{" "}
+                  {
+                    BUILD_STYLES[selected].find((option) => option.id === style)
+                      ?.label
+                  }
+                  <span>Defenses still adapt</span>
+                </div>
+              )}
+              {teammates.length > 0 && <TeamContext team={team} />}
               {!shouldShowRecs ? (
                 <div className="emptyState">
                   <span className="emptyEmblem">
@@ -676,7 +801,7 @@ export default function App() {
                   )}
                   {lockIn && (
                     <LockInChecklist
-                      key={`${selected}:${scoutChamps.map((c) => c.id).join(",")}:${enemyTopNormalized}:${enemyBotNormalized.join(",")}`}
+                      key={`${selected}:${style}:${scoutChamps.map((c) => c.id).join(",")}:${enemyTopNormalized}:${enemyBotNormalized.join(",")}:${teammates.map((c) => c.id).join(",")}`}
                       rec={rec}
                     />
                   )}
